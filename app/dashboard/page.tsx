@@ -45,7 +45,14 @@ export default function Dashboard() {
         const calSnap = await getDocs(query(collection(db, "calendar_events"), orderBy("start", "asc")));
         setCalendarEvents(calSnap.docs.map(d => ({id: d.id, ...d.data()})));
     });
-  }, []);
+  // Sortăm elementele folosind (a: any, b: any) ca să nu mai dea eroare de tip
+        allItems.sort((a: any, b: any) => {
+            const dateA = new Date(a.postedAt || a.date || 0).getTime();
+            const dateB = new Date(b.postedAt || b.date || 0).getTime();
+            return dateB - dateA;
+        });
+        
+        setFeed(allItems);}, []);
 
   const toggleTheme = () => {
     const newVal = !darkMode;
