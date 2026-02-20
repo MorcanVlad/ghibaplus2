@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../lib/firebase";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, collection, addDoc, setDoc, getDocs, query, orderBy, deleteDoc } from "firebase/firestore";
-import { INTEREST_CATEGORIES, SCHOOL_CLASSES, CALENDAR_TYPES } from "../lib/constants";
+import { INTEREST_CATEGORIES, SCHOOL_CLASSES } from "../lib/constants";
 
 export default function AdminPanel() {
   const [user, setUser] = useState<any>(null);
@@ -40,12 +40,18 @@ export default function AdminPanel() {
           setUser(snap.data()); fetchAll();
       } else router.push("/dashboard");
     });
-  }, []);
+  }, [router]);
 
   const fetchAll = async () => {
       const nSnap = await getDocs(query(collection(db, "news"), orderBy("postedAt", "desc")));
       const aSnap = await getDocs(query(collection(db, "activities"), orderBy("postedAt", "desc")));
-      setPosts([...nSnap.docs.map(d => ({id: d.id, col: 'news', ...d.data()})), ...aSnap.docs.map(d => ({id: d.id, col: 'activities', ...d.data()}))]);
+      
+      let allItems: any[] = [
+          ...nSnap.docs.map(d => ({id: d.id, col: 'news', ...d.data()})), 
+          ...aSnap.docs.map(d => ({id: d.id, col: 'activities', ...d.data()}))
+      ];
+      allItems.sort((a: any, b: any) => new Date(b.postedAt || b.date || 0).getTime() - new Date(a.postedAt || a.date || 0).getTime());
+      setPosts(allItems);
       
       const uSnap = await getDocs(collection(db, "users"));
       setUsersDb(uSnap.docs.map(d => ({id: d.id, ...d.data()})));
@@ -80,12 +86,14 @@ export default function AdminPanel() {
 
   const handleSaveActivity = async (e: React.FormEvent) => {
       e.preventDefault();
-      await addDoc(collection(db, "activities"), { type: "activity", title, content, imageUrl, date, location, organizers, maxSpots: spots, tags: selectedTags, targetClasses: selectedClasses, postedAt: new Date().toISOString(), registeredStudents: [], likes: [] });
+      await addDoc(collection(db, "activities"), { type: "activity", title, content, imageUrl, date, location, organizers, maxSpots: spots, tags: selectedTags, targetClasses: selectedClasses, postedAt: new Date().toISOString(), likes: [] });
       alert("✅ Activitate Creată!"); setTitle(""); setContent(""); setImageUrl(""); setDate(""); setLocation(""); setOrganizers(""); setSelectedTags([]); setSelectedClasses([]); fetchAll();
   };
 
   const toggleArray = (val: string, arr: string[], setArr: any) => arr.includes(val) ? setArr(arr.filter(i => i !== val)) : setArr([...arr, val]);
   const inputClass = `w-full p-4 rounded-2xl border bg-[#09090b] border-white/10 outline-none focus:border-red-500 text-white`;
+
+  if(!user) return <div className="min-h-screen bg-[#09090b]"></div>;
 
   return (
     <div className={`min-h-screen p-6 font-sans bg-[#09090b] text-white`}>
@@ -105,7 +113,7 @@ export default function AdminPanel() {
 
         {/* TABS */}
         <div className="flex gap-2 mb-8 overflow-x-auto bg-[#18181b] p-2 rounded-2xl border border-white/5">
-            {[ {id: 'posts', label: '📢 Știri'}, {id: 'activities', label: '⚽ Evenimente'}, {id: 'gestiune', label: '🗑️ Gestiune Postări'}, {id: 'users', label: '👥 Bază Elevi'}, {id: 'whitelist', label: '📧 Aprobare Conturi'}].map(t => (
+            {[ {id: 'posts', label: '📢 Știri'}, {id: 'activities', label: '⚽ Evenimente'}, {id: 'gestiune', label: '🗑️ Moderare'}, {id: 'users', label: '👥 Utilizatori'}, {id: 'whitelist', label: '📧 Whitelist'}].map(t => (
                 <button key={t.id} onClick={() => setActiveTab(t.id)} className={`flex-1 py-3 px-4 rounded-xl font-bold whitespace-nowrap transition-all ${activeTab === t.id ? "bg-red-600 text-white shadow-lg shadow-red-500/20" : "text-gray-500 hover:text-white hover:bg-white/5"}`}>{t.label}</button>
             ))}
         </div>
@@ -115,34 +123,34 @@ export default function AdminPanel() {
             <form onSubmit={handleSavePost} className="bg-[#18181b] border border-white/5 p-8 rounded-[2rem] shadow-2xl">
                 <h2 className="text-2xl font-black mb-6">Postează un Anunț Oficial</h2>
                 <input placeholder="Titlu Postare" className={inputClass} value={title} onChange={e => setTitle(e.target.value)} required />
-                <textarea placeholder="Conținutul anunțului..." className={`${inputClass} h-32 resize-none`} value={content} onChange={e => setContent(e.target.value)} required />
-                <input placeholder="Link Imagine (Opțional)" className={inputClass} value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
-                <button className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-500 transition shadow-lg shadow-blue-500/20 mt-4">Publică Știrea</button>
+                <textarea placeholder="Conținutul anunțului..." className={`${inputClass} h-32 resize-none mt-4`} value={content} onChange={e => setContent(e.target.value)} required />
+                <input placeholder="Link Imagine (Opțional)" className={`${inputClass} mt-4`} value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
+                <button className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-500 transition shadow-lg shadow-blue-500/20 mt-6">Publică Știrea</button>
             </form>
         )}
 
         {/* CREATE ACTIVITY */}
         {activeTab === "activities" && (
             <form onSubmit={handleSaveActivity} className="bg-[#18181b] border border-white/5 p-8 rounded-[2rem] shadow-2xl">
-                <h2 className="text-2xl font-black mb-6 text-green-500">Postează o Activitate cu Înscriere</h2>
+                <h2 className="text-2xl font-black mb-6 text-green-500">Postează o Activitate</h2>
                 <input placeholder="Nume Eveniment" className={inputClass} value={title} onChange={e => setTitle(e.target.value)} required />
-                <textarea placeholder="Detalii, cerințe..." className={`${inputClass} h-24 resize-none`} value={content} onChange={e => setContent(e.target.value)} />
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <textarea placeholder="Detalii, cerințe..." className={`${inputClass} h-24 resize-none mt-4`} value={content} onChange={e => setContent(e.target.value)} />
+                <div className="grid grid-cols-2 gap-4 mt-4">
                     <div><label className="text-xs font-bold mb-2 block text-gray-500">DATA & ORA</label><input type="datetime-local" className={inputClass} value={date} onChange={e => setDate(e.target.value)} required /></div>
                     <div><label className="text-xs font-bold mb-2 block text-gray-500">LOCURI</label><input type="number" className={inputClass} value={spots} onChange={e => setSpots(Number(e.target.value))} required /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-2 gap-4 mt-4">
                     <input placeholder="Locație" className={inputClass} value={location} onChange={e => setLocation(e.target.value)} required />
                     <input placeholder="Organizator" className={inputClass} value={organizers} onChange={e => setOrganizers(e.target.value)} required />
                 </div>
-                <button className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-500 transition shadow-lg shadow-green-500/20">Creează Activitatea</button>
+                <button className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold hover:bg-green-500 transition shadow-lg shadow-green-500/20 mt-6">Creează Activitatea</button>
             </form>
         )}
 
         {/* GESTIUNE */}
         {activeTab === "gestiune" && (
             <div className="bg-[#18181b] border border-white/5 p-8 rounded-[2rem] shadow-2xl">
-                <h2 className="text-2xl font-black mb-6">🗑️ Gestionează Postările</h2>
+                <h2 className="text-2xl font-black mb-6">🗑️ Moderează Postările</h2>
                 <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                     {posts.map(p => (
                         <div key={p.id} className="flex justify-between items-center p-5 bg-[#09090b] rounded-2xl border border-white/5">
@@ -165,8 +173,7 @@ export default function AdminPanel() {
                 <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl mb-6 flex gap-3 items-start">
                     <span className="text-red-500 text-xl">⚠️</span>
                     <p className="text-xs text-red-400 font-medium leading-relaxed">
-                        <strong>ATENȚIE:</strong> Dacă ștergi un cont de aici, îi vei șterge doar profilul de pe GhibaPlus. Contul lui securizat de Google rămâne înregistrat! <br/> 
-                        Dacă elevul dorește să își refacă contul (deoarece i-a dat eroare "Email deja folosit"), trebuie să intri în secțiunea <strong>Authentication</strong> din Consola Firebase și să îi ștergi emailul și de acolo.
+                        Dacă ștergi un cont de aici, îi vei șterge doar setările din baza de date. Dacă vrei să îi blochezi complet accesul și reînregistrarea, șterge-i emailul și din secțiunea <strong>Authentication</strong> a Firebase.
                     </p>
                 </div>
 
@@ -179,7 +186,7 @@ export default function AdminPanel() {
                                 <div className="font-bold mb-1">{u.name} <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300 ml-2">{u.class}</span></div>
                                 <div className="text-xs text-gray-500 font-mono">{u.email}</div>
                             </div>
-                            <button onClick={() => handleDelete(u.id, "users")} className="bg-red-500/10 text-red-500 px-5 py-2.5 rounded-xl font-bold hover:bg-red-500 hover:text-white transition">Șterge Profil</button>
+                            <button onClick={() => handleDelete(u.id, "users")} className="bg-red-500/10 text-red-500 px-5 py-2.5 rounded-xl font-bold hover:bg-red-500 hover:text-white transition">Șterge Bază</button>
                         </div>
                     ))}
                 </div>
@@ -191,9 +198,9 @@ export default function AdminPanel() {
             <div className="grid md:grid-cols-2 gap-8">
                 <div className="bg-[#18181b] border border-white/5 p-8 rounded-[2rem] shadow-2xl">
                     <h2 className="text-xl font-black mb-2">Aprobă Elevi Noi</h2>
-                    <p className="text-xs text-gray-400 mb-4">Adaugă doar numele (ex: <strong>popescu.ion</strong>). Extensia @ghibabirta.ro se pune automat.</p>
+                    <p className="text-xs text-gray-400 mb-4">Adaugă doar numele (ex: <strong>popescu.ion</strong>).</p>
                     <textarea value={emailList} onChange={e => setEmailList(e.target.value)} className={`${inputClass} h-48 resize-none font-mono text-sm leading-relaxed`} placeholder="popescu.ion&#10;ionescu.maria"/>
-                    <button onClick={handleAddWhitelist} className="w-full bg-blue-600 py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-500 transition">Validează Lista</button>
+                    <button onClick={handleAddWhitelist} className="w-full bg-blue-600 py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-500 transition mt-4">Validează Lista</button>
                 </div>
 
                 <div className="bg-[#18181b] border border-white/5 p-8 rounded-[2rem] shadow-2xl">
@@ -204,7 +211,7 @@ export default function AdminPanel() {
                         {whitelistDb.filter(w => w.id.includes(whitelistSearch.toLowerCase())).map(w => (
                             <div key={w.id} className="flex justify-between items-center p-4 bg-[#09090b] rounded-2xl border border-white/5">
                                 <span className="text-sm font-mono text-gray-300">{w.id}</span>
-                                <button onClick={() => handleDelete(w.id, "whitelist")} className="text-red-500 text-xs font-bold px-4 py-2 bg-red-500/10 rounded-lg hover:bg-red-500 hover:text-white transition">Șterge</button>
+                                <button onClick={() => handleDelete(w.id, "whitelist")} className="text-red-500 text-xs font-bold px-4 py-2 bg-red-500/10 rounded-lg hover:bg-red-500 hover:text-white transition">Revocă</button>
                             </div>
                         ))}
                     </div>

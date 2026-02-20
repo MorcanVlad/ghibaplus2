@@ -29,17 +29,15 @@ export default function Dashboard() {
             setUser({ id: u.uid, ...snap.data() });
         }
         
-        // Load Feed Data
         const newsSnap = await getDocs(query(collection(db, "news"), orderBy("postedAt", "desc")));
         const actSnap = await getDocs(query(collection(db, "activities"), orderBy("postedAt", "desc")));
         
-        // AICI ESTE REPARAȚIA: am forțat tipul "any[]" ca Vercel să nu mai comenteze
+        // Vercel Typescript Fix aplicat
         let allItems: any[] = [
             ...newsSnap.docs.map(d => ({id: d.id, collectionType: 'news', ...d.data()})), 
             ...actSnap.docs.map(d => ({id: d.id, collectionType: 'activities', ...d.data()}))
         ];
         
-        // Sortarea funcționează acum perfect
         allItems.sort((a: any, b: any) => {
             const timeA = new Date(a.postedAt || a.date || 0).getTime();
             const timeB = new Date(b.postedAt || b.date || 0).getTime();
@@ -70,7 +68,7 @@ export default function Dashboard() {
           authorName: user.name,
           authorAvatar: user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`,
           postedAt: new Date().toISOString(),
-          likes: [], reposts: []
+          likes: [] // Fara reposts
       };
       const docRef = await addDoc(collection(db, "news"), newPost);
       setFeed([{id: docRef.id, collectionType: 'news', ...newPost}, ...feed]);
@@ -92,6 +90,7 @@ export default function Dashboard() {
 
   return (
     <div className={`relative min-h-screen font-sans transition-colors duration-500 ${bgClass}`}>
+        {/* Navbar - Fara Link de Profil */}
         <nav className={`fixed top-0 w-full z-40 border-b px-4 py-3 ${glassNav}`}>
             <div className="max-w-6xl mx-auto flex justify-between items-center gap-4">
                 <Link href="/dashboard" className="flex items-center gap-3 group">
@@ -102,7 +101,6 @@ export default function Dashboard() {
                 <input placeholder="Caută..." className={`hidden sm:block flex-1 max-w-sm border rounded-full px-5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500 transition-all ${darkMode ? "bg-white/5 border-white/10 text-white placeholder-gray-500" : "bg-gray-100 border-gray-200 text-gray-900"}`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}/>
 
                 <div className="flex gap-4 items-center">
-                    <Link href={`/profile/${user.id}`} className="text-sm font-bold hover:text-red-500 transition hidden sm:block">Profil Meu</Link>
                     <button onClick={toggleTheme} className="text-xl hover:scale-110 transition-transform"> {darkMode ? "☀️" : "🌙"}</button>
                     {user.role === 'admin' && <button onClick={() => router.push('/admin')} className="bg-red-600 px-4 py-2 rounded-xl text-xs text-white font-bold hover:bg-red-500 transition shadow-lg shadow-red-500/20">ADMIN</button>}
                     <button onClick={() => auth.signOut()} className="text-xs font-bold text-gray-500 hover:text-red-500 bg-black/5 dark:bg-white/5 px-3 py-2 rounded-lg">Ieșire</button>
@@ -115,7 +113,7 @@ export default function Dashboard() {
                 
                 <div className={`p-6 rounded-[2rem] transition-all ${cardClass}`}>
                     <div className="flex gap-4 items-start mb-4">
-                        <Link href={`/profile/${user.id}`}><img src={user.avatarUrl} className="w-12 h-12 rounded-full border-2 border-transparent hover:border-red-500 transition-colors" /></Link>
+                        <img src={user.avatarUrl} className="w-12 h-12 rounded-full border-2 border-transparent" alt="Tu" />
                         <textarea value={postContent} onChange={e => setPostContent(e.target.value)} placeholder={`Ce se întâmplă azi, ${user.name.split(' ')[0]}?`} className={`w-full h-24 p-4 rounded-[1.5rem] resize-none outline-none text-[15px] font-medium transition-colors ${darkMode ? "bg-black/30 text-white placeholder-gray-500 focus:bg-white/5" : "bg-gray-50 text-gray-900 placeholder-gray-400 focus:bg-gray-100"}`}/>
                     </div>
                     <div className="flex justify-between items-center pl-16">
@@ -133,13 +131,14 @@ export default function Dashboard() {
                         
                         <div className="p-6 pb-3 flex justify-between items-start">
                             {item.type === 'user_post' ? (
-                                <Link href={`/profile/${item.authorId}`} className="flex items-center gap-3 group">
-                                    <img src={item.authorAvatar} className="w-12 h-12 rounded-full border border-white/10 group-hover:border-red-500 transition-colors" />
+                                /* FĂRĂ LINK DE PROFIL */
+                                <div className="flex items-center gap-3">
+                                    <img src={item.authorAvatar} className="w-12 h-12 rounded-full border border-white/10 bg-white/5" />
                                     <div>
                                         <div className="font-bold flex items-center gap-2 text-[15px]">{item.authorName} <span className="bg-blue-500/10 text-blue-500 text-[10px] px-2 py-0.5 rounded-md uppercase font-bold">Elev</span></div>
                                         <div className="text-xs text-gray-500">{new Date(item.postedAt).toLocaleString('ro-RO')}</div>
                                     </div>
-                                </Link>
+                                </div>
                             ) : (
                                 <div className="flex items-center gap-3">
                                     <img src="/favicon.ico" className="w-12 h-12 rounded-xl shadow-md" />

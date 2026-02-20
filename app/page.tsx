@@ -40,33 +40,26 @@ export default function Login() {
 
     try {
       if (isRegistering) {
-        if (!studentClass) return setError("Te rugăm să îți alegi clasa!"); 
+        if (!studentClass) return setError("Alege-ți clasa!"); 
         if (!acceptedTerms) return setError("Trebuie să accepți Termenii și Condițiile."); 
         if (password !== confirmPassword) return setError("Parolele nu coincid!"); 
         if (phone.length < 10) return setError("Număr de telefon invalid!"); 
 
+        // Verificare Whitelist
         const whitelistSnap = await getDoc(doc(db, "whitelist", formattedEmail));
-        if (!whitelistSnap.exists()) return setError("⛔ Emailul tău nu este aprobat încă. Vorbește cu un profesor/admin."); 
+        if (!whitelistSnap.exists()) return setError("⛔ Emailul tău nu este aprobat încă de un admin."); 
 
-        // 1. Creăm Auth
         const result = await createUserWithEmailAndPassword(auth, formattedEmail, password);
         let displayName = formattedEmail.split("@")[0].split(".").map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(" ");
         
-        // 2. Creăm BAZA DE DATE stabilă
-        const userRef = doc(db, "users", result.user.uid);
-        await setDoc(userRef, { 
+        // Baza de date CURATĂ (fără followers/bio)
+        await setDoc(doc(db, "users", result.user.uid), { 
           uid: result.user.uid,
           email: result.user.email, 
           name: displayName, 
           phone: phone, 
           class: studentClass, 
           role: "student", 
-          interests: [], 
-          bio: "Salut! Sunt nou pe GhibaPlus.",
-          followers: [],
-          following: [],
-          showPhoneInSettings: false,
-          onboardingCompleted: true,
           avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`,
           termsAcceptedAt: new Date().toISOString()
         });
@@ -76,8 +69,7 @@ export default function Login() {
       router.push("/dashboard");
     } catch (err: any) {
       if (err.code === 'auth/invalid-credential') setError("Parolă sau email incorect.");
-      else if (err.code === 'auth/weak-password') setError("Parola e prea scurtă (minim 6 caractere).");
-      else if (err.code === 'auth/email-already-in-use') setError("Acest cont există deja. Dacă ai fost șters de admin, roagă-l să îți șteargă și Authentication-ul din Firebase.");
+      else if (err.code === 'auth/email-already-in-use') setError("Cont existent! Dacă a fost șters de admin, trebuie ștearsă și parola din Firebase Auth.");
       else setError(err.message);
     }
   };
@@ -88,7 +80,6 @@ export default function Login() {
 
   return (
     <div className={`relative min-h-screen flex items-center justify-center overflow-hidden font-sans transition-colors duration-500 ${bgClass}`}>
-      {/* Animated Glowing Orbs Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-red-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10000ms]"></div>
           <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-orange-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[8000ms]"></div>
@@ -126,7 +117,7 @@ export default function Login() {
                     <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/5 border border-red-500/10">
                         <input type="checkbox" id="terms" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-red-600 cursor-pointer rounded-md" />
                         <label htmlFor="terms" className={`text-xs leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                            Accept <button type="button" onClick={() => setShowTerms(true)} className="text-red-500 font-bold hover:underline">Termenii și Condițiile</button> comunității.
+                            Accept <button type="button" onClick={() => setShowTerms(true)} className="text-red-500 font-bold hover:underline">Termenii și Condițiile</button>.
                         </label>
                     </div>
                 </div>
@@ -151,8 +142,8 @@ export default function Login() {
                 <h2 className="text-3xl font-black mb-6 flex items-center gap-3"><img src="/favicon.ico" className="w-8 h-8 rounded-lg"/> T&C GhibaPlus</h2>
                 <div className="overflow-y-auto max-h-[60vh] text-sm opacity-80 space-y-4 pr-2 font-medium">
                     <p>1. <strong>Neoficial:</strong> Datele sunt informative. Verifică mereu anunțurile de la profesori.</p>
-                    <p>2. <strong>Conduită:</strong> Fii respectuos. Spamul și jignirile atrag interdicția contului.</p>
-                    <p>3. <strong>Date:</strong> Telefonul și clasa sunt necesare pentru a te înscrie la evenimente oficiale din școală.</p>
+                    <p>2. <strong>Conduită:</strong> Fii respectuos în postări. Spamul atrage interdicția contului.</p>
+                    <p>3. <strong>Date:</strong> Telefonul și clasa sunt necesare pentru a te înscrie la evenimente.</p>
                 </div>
                 <button onClick={() => setShowTerms(false)} className="mt-8 bg-red-600 text-white w-full py-4 rounded-2xl font-bold text-lg hover:bg-red-500 transition-colors shadow-lg shadow-red-600/20">Am Înțeles</button>
             </div>
