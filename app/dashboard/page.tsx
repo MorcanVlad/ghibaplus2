@@ -15,7 +15,6 @@ export default function Dashboard() {
   const [postTags, setPostTags] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
 
-  const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [darkMode, setDarkMode] = useState(true);
   const router = useRouter();
@@ -34,20 +33,25 @@ export default function Dashboard() {
         const newsSnap = await getDocs(query(collection(db, "news"), orderBy("postedAt", "desc")));
         const actSnap = await getDocs(query(collection(db, "activities"), orderBy("postedAt", "desc")));
         
-        // Adăugăm ": any[]" pentru a forța TypeScript să ignore verificarea strictă
+        // AICI ESTE REPARAȚIA: am forțat tipul "any[]" ca Vercel să nu mai comenteze
         let allItems: any[] = [
             ...newsSnap.docs.map(d => ({id: d.id, collectionType: 'news', ...d.data()})), 
             ...actSnap.docs.map(d => ({id: d.id, collectionType: 'activities', ...d.data()}))
         ];
         
-        // Acum sortarea va funcționa fără ca Vercel să mai dea crash
-        allItems.sort((a, b) => {
-            const dateA = a.postedAt || a.date || 0;
-            const dateB = b.postedAt || b.date || 0;
-            return new Date(dateB).getTime() - new Date(dateA).getTime();
+        // Sortarea funcționează acum perfect
+        allItems.sort((a: any, b: any) => {
+            const timeA = new Date(a.postedAt || a.date || 0).getTime();
+            const timeB = new Date(b.postedAt || b.date || 0).getTime();
+            return timeB - timeA;
         });
         
-        setFeed(allItems);}, []);
+        setFeed(allItems);
+
+        const calSnap = await getDocs(query(collection(db, "calendar_events"), orderBy("start", "asc")));
+        setCalendarEvents(calSnap.docs.map(d => ({id: d.id, ...d.data()})));
+    });
+  }, [router]);
 
   const toggleTheme = () => {
     const newVal = !darkMode;
@@ -88,7 +92,6 @@ export default function Dashboard() {
 
   return (
     <div className={`relative min-h-screen font-sans transition-colors duration-500 ${bgClass}`}>
-        {/* Navbar */}
         <nav className={`fixed top-0 w-full z-40 border-b px-4 py-3 ${glassNav}`}>
             <div className="max-w-6xl mx-auto flex justify-between items-center gap-4">
                 <Link href="/dashboard" className="flex items-center gap-3 group">
@@ -108,10 +111,8 @@ export default function Dashboard() {
         </nav>
 
         <main className="max-w-6xl mx-auto p-4 mt-24 grid lg:grid-cols-3 gap-8 relative z-10">
-            {/* Feed Principal */}
             <div className="lg:col-span-2 space-y-6">
                 
-                {/* Zona de Postare */}
                 <div className={`p-6 rounded-[2rem] transition-all ${cardClass}`}>
                     <div className="flex gap-4 items-start mb-4">
                         <Link href={`/profile/${user.id}`}><img src={user.avatarUrl} className="w-12 h-12 rounded-full border-2 border-transparent hover:border-red-500 transition-colors" /></Link>
@@ -127,7 +128,6 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Lista Postari */}
                  {feed.filter(i => i.content?.toLowerCase().includes(searchQuery.toLowerCase()) || i.title?.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
                     <div key={item.id} className={`rounded-[2rem] overflow-hidden transition-all duration-300 hover:-translate-y-1 ${cardClass}`}>
                         
@@ -171,7 +171,6 @@ export default function Dashboard() {
                  ))}
             </div>
 
-            {/* Sidebar Calendar */}
             <div className={`p-6 rounded-[2rem] sticky top-28 ${cardClass}`}>
                 <h3 className="font-black text-xl mb-6 flex items-center gap-3"><span className="text-2xl">📅</span> Calendar Școlar</h3>
                 <div className="space-y-3">
