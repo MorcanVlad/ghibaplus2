@@ -53,10 +53,10 @@ export default function Dashboard() {
     
     allItems.sort((a:any, b:any) => new Date(b.postedAt||b.date||0).getTime() - new Date(a.postedAt||a.date||0).getTime());
     
-    // În Feed ajung doar știrile și evenimentele (holiday-urile sunt excluse)
-    setFeed(allItems.filter(item => item.type !== 'holiday'));
+    // În Feed ajung doar știrile și evenimentele (Vacanțele și Examenele sunt excluse)
+    setFeed(allItems.filter(item => item.type !== 'holiday' && item.type !== 'exam'));
     
-    // În Calendar ajung toate elementele din colecția calendar_events (inclusiv activități și vacanțe)
+    // În Calendar ajung toate elementele din colecția calendar_events (inclusiv activități, vacanțe, examene)
     setCalendarEvents(allItems.filter(item => item.col === 'calendar_events'));
   };
 
@@ -80,7 +80,7 @@ export default function Dashboard() {
   };
 
   const handleRegister = async (item: any) => {
-    if (item.type === 'holiday') return; 
+    if (item.type === 'holiday' || item.type === 'exam') return; // Protectie extra
     const isReg = item.attendees?.some((a:any) => a.id === user.id);
     const ref = doc(db, "calendar_events", item.id);
     const newAttendees = isReg ? item.attendees.filter((a:any)=>a.id!==user.id) : [...(item.attendees||[]), {id:user.id, name:user.name, class:user.class, phone:user.phone}];
@@ -89,7 +89,6 @@ export default function Dashboard() {
     await updateDoc(ref, { attendees: newAttendees });
     if(!isReg) await addDoc(collection(db, "users", user.id, "notifications"), { type: "join_event", eventTitle: item.title, sentAt: new Date().toISOString(), read: false });
     
-    // Update local state instantly for modal
     setSelectedPost((prev: any) => ({ ...prev, attendees: newAttendees }));
     loadFeed();
   };
@@ -211,7 +210,8 @@ export default function Dashboard() {
                 {calendarEvents.map(ev => (
                     // Când dă click pe elementul din calendar, deschidem modalul automat
                     <div key={ev.id} onClick={() => setSelectedPost(ev)} className={`cursor-pointer p-4 rounded-2xl border transition-all relative overflow-hidden transform hover:scale-[1.02] hover:shadow-lg ${darkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-white'}`}>
-                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ev.type === 'holiday' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
+                        {/* CULOAREA IN CALENDAR (MOV PENTRU EXAMEN) */}
+                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ev.type === 'holiday' ? 'bg-yellow-500' : (ev.type === 'exam' ? 'bg-purple-500' : 'bg-blue-500')}`}></div>
                         <div className="font-bold text-sm ml-2 line-clamp-1">{ev.title}</div>
                         <div className="text-[10px] opacity-60 ml-2 mt-1 font-mono">{formatEventDateTime(ev)}</div>
                     </div>
@@ -284,24 +284,29 @@ export default function Dashboard() {
               {selectedPost.imageUrl && <div className="h-48 sm:h-72 w-full bg-cover bg-center" style={{backgroundImage:`url(${selectedPost.imageUrl})`}}></div>}
               <div className="p-6 sm:p-10">
                 
-                {/* Pop-up-ul arată un badge dacă e vacanță */}
+                {/* ETICHETA DE TIP EVENIMENT IN MODAL (MOV PENTRU EXAMEN) */}
                 <div className="mb-4">
-                     <span className={`text-[10px] uppercase font-black px-3 py-1 rounded-full ${selectedPost.type === 'holiday' ? 'bg-yellow-500/20 text-yellow-500' : (selectedPost.type === 'activity' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500')}`}> 
-                         {selectedPost.type === 'holiday' ? 'Vacanță / Zi Liberă' : (selectedPost.type === 'activity' ? 'Eveniment' : 'Anunț')} 
+                     <span className={`text-[10px] uppercase font-black px-3 py-1 rounded-full ${
+                         selectedPost.type === 'holiday' ? 'bg-yellow-500/20 text-yellow-500' : 
+                         selectedPost.type === 'exam' ? 'bg-purple-500/20 text-purple-500' : 
+                         (selectedPost.type === 'activity' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500')
+                     }`}> 
+                         {selectedPost.type === 'holiday' ? 'Vacanță / Zi Liberă' : selectedPost.type === 'exam' ? 'Examen / Testare' : (selectedPost.type === 'activity' ? 'Eveniment' : 'Anunț')} 
                      </span>
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-black mb-6">{selectedPost.title}</h2>
                 <p className="text-base sm:text-lg leading-relaxed opacity-90 whitespace-pre-wrap mb-8">{selectedPost.content}</p>
                 
-                {(selectedPost.type === 'activity' || selectedPost.type === 'holiday') && (
+                {/* AFISAREA DATEI PENTRU TOATE EVENIMENTELE DIN CALENDAR (INCLUSIV EXAMEN) */}
+                {(selectedPost.type === 'activity' || selectedPost.type === 'holiday' || selectedPost.type === 'exam') && (
                     <div className={`mb-6 p-4 sm:p-5 rounded-2xl border grid gap-4 ${selectedPost.location ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'} ${darkMode ? 'bg-black/30 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                         <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.dateTime}</span><span className="font-bold text-blue-500 text-sm sm:text-base">{formatEventDateTime(selectedPost)}</span></div>
                         {selectedPost.location && <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.location}</span><span className="font-bold text-sm sm:text-base">{selectedPost.location}</span></div>}
                     </div>
                 )}
 
-                {/* Butonul de participare dispare complet dacă este vacanță */}
+                {/* Butonul de participare apare DOAR DACA ESTE ACTIVITATE */}
                 {selectedPost.type === 'activity' && (
                   <button onClick={() => handleRegister(selectedPost)} className={`w-full py-4 rounded-2xl font-black text-lg shadow-xl transition-colors ${selectedPost.attendees?.some((a:any)=>a.id===user.id) ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white' : 'bg-green-600 text-white hover:bg-green-500'}`}>
                     {selectedPost.attendees?.some((a:any)=>a.id===user.id) ? t.cancel : t.join}

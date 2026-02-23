@@ -22,7 +22,7 @@ export default function AdminPanel() {
   const [notifBody, setNotifBody] = useState("");
   const [selectedClassNotif, setSelectedClassNotif] = useState("Toată Școala");
 
-  const [eventType, setEventType] = useState("activity"); 
+  const [eventType, setEventType] = useState("activity"); // 'activity', 'holiday', 'exam'
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [hasTime, setHasTime] = useState(false);
@@ -35,8 +35,6 @@ export default function AdminPanel() {
   const [whitelistSearch, setWhitelistSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [viewAttendeesModal, setViewAttendeesModal] = useState<any>(null);
-
-  // NOU: STATE PENTRU EDITARE
   const [editingPost, setEditingPost] = useState<any>(null);
 
   const router = useRouter();
@@ -136,7 +134,6 @@ export default function AdminPanel() {
     setEvLoc(""); setSelectedClasses([]); setEventType("activity"); fetchData();
   };
 
-  // NOU: Funcția care salvează Editarea
   const handleUpdateEditingPost = async () => {
       try {
           const ref = doc(db, editingPost.col, editingPost.id);
@@ -144,7 +141,7 @@ export default function AdminPanel() {
               title: editingPost.title,
               content: editingPost.content,
           };
-          if (editingPost.col === 'calendar_events') {
+          if (editingPost.col === 'calendar_events' && editingPost.type === 'activity') {
               (dataToUpdate as any).location = editingPost.location;
               (dataToUpdate as any).maxSpots = editingPost.maxSpots;
           }
@@ -221,8 +218,12 @@ export default function AdminPanel() {
                         <div key={p.id} className={`flex justify-between items-center p-5 rounded-2xl border transition-colors ${darkMode ? 'bg-black/40 border-white/5 hover:border-white/10' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}>
                             <div>
                                 <div className="font-bold mb-1 flex items-center gap-2">
-                                    <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded ${p.type === 'holiday' ? 'bg-yellow-500/20 text-yellow-600' : (p.type === 'activity' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500')}`}> 
-                                        {p.type === 'holiday' ? 'Vacanță' : (p.type === 'activity' ? 'Eveniment' : 'Anunț')} 
+                                    <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded ${
+                                        p.type === 'holiday' ? 'bg-yellow-500/20 text-yellow-600' : 
+                                        p.type === 'exam' ? 'bg-purple-500/20 text-purple-500' : 
+                                        (p.type === 'activity' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500')
+                                    }`}> 
+                                        {p.type === 'holiday' ? 'Vacanță' : p.type === 'exam' ? 'Examen' : (p.type === 'activity' ? 'Eveniment' : 'Anunț')} 
                                     </span>
                                     {p.title} <span className={`text-xs font-normal opacity-60`}>{p.authorName || p.organizers ? `(${p.authorName || p.organizers})` : ''}</span>
                                 </div>
@@ -234,9 +235,7 @@ export default function AdminPanel() {
                                         👥 ({p.attendees?.length || 0})
                                     </button>
                                 )}
-                                {/* BUTON EDITARE */}
                                 <button onClick={() => setEditingPost(p)} className="bg-yellow-500/10 text-yellow-600 px-4 py-2.5 rounded-xl font-bold hover:bg-yellow-500 hover:text-white transition">Editează</button>
-                                
                                 <button onClick={() => handleDelete(p.id, p.col)} className="bg-red-500/10 text-red-500 px-4 py-2.5 rounded-xl font-bold hover:bg-red-600 hover:text-white transition">Șterge</button>
                             </div>
                         </div>
@@ -245,7 +244,6 @@ export default function AdminPanel() {
             </div>
         )}
 
-        {/* MODAL PENTRU EDITAREA POSTARILOR */}
         {editingPost && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
                 <div className={`border p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative overflow-y-auto max-h-[90vh] custom-scrollbar ${darkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200 text-slate-900'}`}>
@@ -264,7 +262,7 @@ export default function AdminPanel() {
                             <textarea className={`w-full p-4 rounded-2xl outline-none border h-32 resize-none ${inputBg}`} value={editingPost.content} onChange={e=>setEditingPost({...editingPost, content: e.target.value})} />
                         </div>
 
-                        {editingPost.col === 'calendar_events' && (
+                        {editingPost.col === 'calendar_events' && editingPost.type === 'activity' && (
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-[10px] font-black uppercase opacity-50 block mb-2">Locație (dacă e cazul)</label>
@@ -363,11 +361,12 @@ export default function AdminPanel() {
                     <select value={eventType} onChange={e=>setEventType(e.target.value)} className={`w-full p-4 rounded-2xl outline-none font-bold border cursor-pointer ${inputBg}`}>
                         <option value="activity" className="text-black bg-white">🎟️ Eveniment cu Înscriere / Participare</option>
                         <option value="holiday" className="text-black bg-white">🌴 Vacanță / Zi Liberă (Doar informativ)</option>
+                        <option value="exam" className="text-black bg-white">📝 Examen / Testare (Doar informativ)</option>
                     </select>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                    <input placeholder={eventType === 'holiday' ? "Titlu Vacanță (ex: Vacanța de Primăvară)" : "Titlu Eveniment"} className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={title} onChange={e=>setTitle(e.target.value)} required />
+                    <input placeholder={eventType === 'holiday' ? "Titlu Vacanță (ex: Vacanța de Primăvară)" : (eventType === 'exam' ? "Nume Examen (ex: Simulări Mate)" : "Titlu Eveniment")} className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={title} onChange={e=>setTitle(e.target.value)} required />
                     {eventType === 'activity' && <input placeholder="Organizator (ex: C.S.E.)" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={authorName} onChange={e=>setAuthorName(e.target.value)} />}
                 </div>
                 
@@ -411,7 +410,7 @@ export default function AdminPanel() {
                 <div className="flex flex-wrap gap-2 mb-6">{SCHOOL_CLASSES.map(c => <button key={c} type="button" onClick={() => toggleClass(c)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${selectedClasses.includes(c) ? 'bg-green-600 border-green-500 text-white' : `${darkMode?'bg-white/5 border-white/10 text-gray-400':'bg-slate-100 border-slate-200 text-slate-600'}`}`}>{c}</button>)}</div>
                 
                 <button className="w-full py-4 bg-green-600 text-white rounded-2xl font-black text-lg hover:bg-green-500 transition shadow-lg shadow-green-500/20">
-                    {eventType === 'holiday' ? 'Salvează Vacanța' : 'Creează Eveniment'}
+                    {eventType === 'holiday' ? 'Salvează Vacanța' : (eventType === 'exam' ? 'Salvează Examenul' : 'Creează Eveniment')}
                 </button>
             </form>
         )}
