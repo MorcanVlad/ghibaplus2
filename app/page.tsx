@@ -2,11 +2,10 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "./lib/firebase"; 
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { SCHOOL_CLASSES } from "./lib/constants";
 
-// --- DICȚIONAR PENTRU PAGINA DE LOGIN ---
 const TRANSLATIONS: any = {
   ro: {
     portal: "Portalul Elevilor", emailPlace: "Nume.Prenume@ghibabirta.ro", phonePlace: "Telefon (07XX...)",
@@ -19,12 +18,15 @@ const TRANSLATIONS: any = {
     errPhone: "Numărul de telefon trebuie să aibă exact 10 cifre!",
     errWhitelist: "⛔ Cont neaprobat. Contactează Consiliul Elevilor.",
     errCreds: "Parolă sau email incorect.", errInUse: "Acest cont a fost deja creat.",
+    welcomeTitle: "Bine ai venit!", welcomeMsg: "Ne bucurăm să te avem pe GhibaPlus. Aici vei găsi toate noutățile și evenimentele școlii!",
+    classWarning: "⚠️ Atenție: Clasa nu mai poate fi modificată după crearea contului!",
     tTitle: "📄 Termeni și Condiții", tBtn: "Am înțeles și Accept",
-    t1: "1. Platformă Neoficială: GhibaPlus este independentă și nu înlocuiește canalele oficiale ale școlii.",
-    t2: "2. Date: Datele sunt stocate securizat. Telefonul/clasa sunt strict pentru organizare internă.",
-    t3: "3. Conduită: Orice formă de bullying sau spam va duce la suspendarea contului tău.",
-    t4: "4. Moderare: Administratorii pot revoca accesul utilizatorilor problematici fără avertizare.",
-    t5: "5. Securitate: Ești responsabil pentru păstrarea confidențialității parolei."
+    tc1: "1. Originea Platformei: Această aplicație, GhibaPlus, a fost realizată și dezvoltată în cadrul unui proiect de mobilitate Erasmus+ desfășurat în Portugalia. Este o inițiativă independentă creată de elevi, pentru elevi.",
+    tc2: "2. Statut Neoficial: GhibaPlus nu reprezintă un canal de comunicare administrativ oficial al instituției de învățământ, ci funcționează ca un instrument suplimentar și modern pentru informarea și organizarea comunității școlare.",
+    tc3: "3. Prelucrarea Datelor: Datele cu caracter personal (nume, clasă, număr de telefon, email) sunt colectate strict în scopul funcționării platformei (ex: validarea identității, înscrierea la evenimente). Datele sunt stocate în siguranță și nu vor fi partajate cu terți în scopuri comerciale.",
+    tc4: "4. Reguli de Conduită: Utilizatorii se obligă să mențină un comportament civilizat. Orice formă de hărțuire (bullying), limbaj licențios, instigare la ură sau spam va atrage suspendarea sau ștergerea definitivă a contului.",
+    tc5: "5. Moderare și Responsabilitate: Administratorii platformei își rezervă dreptul de a revoca accesul utilizatorilor care încalcă prezentul regulament, fără o notificare prealabilă. Utilizatorul poartă responsabilitatea exclusivă pentru păstrarea confidențialității parolei sale.",
+    tc6: "Prin continuarea utilizării acestei platforme, confirmi că ai citit, înțeles și acceptat aceste reguli în totalitate."
   },
   en: {
     portal: "Student Portal", emailPlace: "Name.Surname@ghibabirta.ro", phonePlace: "Phone (07XX...)",
@@ -37,66 +39,15 @@ const TRANSLATIONS: any = {
     errPhone: "Phone number must be exactly 10 digits!",
     errWhitelist: "⛔ Account not approved. Contact the Student Council.",
     errCreds: "Incorrect email or password.", errInUse: "This account already exists.",
+    welcomeTitle: "Welcome!", welcomeMsg: "Glad to have you on GhibaPlus. Here you will find all school news and events!",
+    classWarning: "⚠️ Warning: Your class cannot be changed after registration!",
     tTitle: "📄 Terms and Conditions", tBtn: "I understand and Accept",
-    t1: "1. Unofficial Platform: GhibaPlus is independent and does not replace official school channels.",
-    t2: "2. Data: Data is stored securely. Phone/class are strictly for internal organization.",
-    t3: "3. Conduct: Any form of bullying or spam will result in account suspension.",
-    t4: "4. Moderation: Administrators can revoke access for problematic users without warning.",
-    t5: "5. Security: You are responsible for keeping your password confidential."
-  },
-  fr: {
-    portal: "Portail Étudiant", emailPlace: "Nom.Prenom@ghibabirta.ro", phonePlace: "Téléphone (07XX...)",
-    classPlace: "Classe", passPlace: "Mot de passe", confirmPlace: "Confirmer le mot de passe",
-    accept1: "J'accepte les ", termsBtn: "Conditions d'utilisation", accept2: ".",
-    btnRegister: "Créer un Compte", btnLogin: "Se Connecter",
-    switchLogin: "Déjà un compte ? Connectez-vous.", switchRegister: "Nouveau ? Demandez un compte.",
-    errEmail: "Utilisez l'email de l'école (@ghibabirta.ro).", errClass: "Choisissez votre classe !",
-    errTerms: "Vous devez accepter les conditions.", errPassMatch: "Les mots de passe ne correspondent pas !",
-    errPhone: "Le numéro doit comporter exactement 10 chiffres !",
-    errWhitelist: "⛔ Compte non approuvé. Contactez le Conseil.",
-    errCreds: "Email ou mot de passe incorrect.", errInUse: "Ce compte existe déjà.",
-    tTitle: "📄 Conditions d'utilisation", tBtn: "Je comprends et j'accepte",
-    t1: "1. Plateforme Non Officielle : GhibaPlus est indépendant et ne remplace pas les canaux officiels.",
-    t2: "2. Données : Stockées de manière sécurisée. Téléphone/classe utilisés pour l'organisation interne.",
-    t3: "3. Conduite : Tout harcèlement ou spam entraînera la suspension du compte.",
-    t4: "4. Modération : Les administrateurs peuvent révoquer l'accès sans avertissement.",
-    t5: "5. Sécurité : Vous êtes responsable de la confidentialité de votre mot de passe."
-  },
-  de: {
-    portal: "Schülerportal", emailPlace: "Name.Vorname@ghibabirta.ro", phonePlace: "Telefon (07XX...)",
-    classPlace: "Klasse", passPlace: "Passwort", confirmPlace: "Passwort bestätigen",
-    accept1: "Ich akzeptiere die ", termsBtn: "Nutzungsbedingungen", accept2: ".",
-    btnRegister: "Konto erstellen", btnLogin: "Anmelden",
-    switchLogin: "Hast du schon ein Konto? Anmelden.", switchRegister: "Neu hier? Konto anfordern.",
-    errEmail: "Verwende deine Schul-E-Mail (@ghibabirta.ro).", errClass: "Wähle deine Klasse!",
-    errTerms: "Du musst die Nutzungsbedingungen akzeptieren.", errPassMatch: "Passwörter stimmen nicht überein!",
-    errPhone: "Die Telefonnummer muss genau 10 Ziffern lang sein!",
-    errWhitelist: "⛔ Konto nicht genehmigt. Kontaktiere den Schülerrat.",
-    errCreds: "Falsche E-Mail oder Passwort.", errInUse: "Dieses Konto existiert bereits.",
-    tTitle: "📄 Nutzungsbedingungen", tBtn: "Ich verstehe und akzeptiere",
-    t1: "1. Inoffizielle Plattform: GhibaPlus ist unabhängig.",
-    t2: "2. Daten: Sicher gespeichert. Nur für interne Organisation.",
-    t3: "3. Verhalten: Mobbing oder Spam führt zur Sperrung.",
-    t4: "4. Moderation: Administratoren können den Zugriff widerrufen.",
-    t5: "5. Sicherheit: Du bist für dein Passwort verantwortlich."
-  },
-  es: {
-    portal: "Portal Estudiantil", emailPlace: "Nombre.Apellido@ghibabirta.ro", phonePlace: "Teléfono (07XX...)",
-    classPlace: "Clase", passPlace: "Contraseña", confirmPlace: "Confirmar Contraseña",
-    accept1: "Acepto los ", termsBtn: "Términos y Condiciones", accept2: ".",
-    btnRegister: "Crear Cuenta", btnLogin: "Iniciar Sesión",
-    switchLogin: "¿Ya tienes cuenta? Inicia sesión.", switchRegister: "¿Nuevo aquí? Solicita una cuenta.",
-    errEmail: "Usa tu correo escolar (@ghibabirta.ro).", errClass: "¡Elige tu clase!",
-    errTerms: "Debes aceptar los Términos y Condiciones.", errPassMatch: "¡Las contraseñas no coinciden!",
-    errPhone: "¡El número debe tener exactamente 10 dígitos!",
-    errWhitelist: "⛔ Cuenta no aprobada. Contacta al Consejo Estudiantil.",
-    errCreds: "Correo o contraseña incorrectos.", errInUse: "Esta cuenta ya existe.",
-    tTitle: "📄 Términos y Condiciones", tBtn: "Entiendo y Acepto",
-    t1: "1. Plataforma No Oficial: GhibaPlus es independiente.",
-    t2: "2. Datos: Almacenados de forma segura.",
-    t3: "3. Conducta: El acoso o spam resultará en suspensión.",
-    t4: "4. Moderación: Los administradores pueden revocar el acceso.",
-    t5: "5. Seguridad: Eres responsable de tu contraseña."
+    tc1: "1. Platform Origin: This application, GhibaPlus, was designed and developed during an Erasmus+ mobility project held in Portugal. It is an independent initiative created by students, for students.",
+    tc2: "2. Unofficial Status: GhibaPlus is not an official administrative communication channel of the educational institution, but serves as an additional, modern tool for informing and organizing the school community.",
+    tc3: "3. Data Processing: Personal data (name, class, phone number, email) are collected strictly for the platform's operation (e.g., identity validation, event registration). Data is stored securely and will not be shared with third parties for commercial purposes.",
+    tc4: "4. Code of Conduct: Users must maintain civilized behavior. Any form of harassment (bullying), foul language, hate speech, or spam will result in the suspension or permanent deletion of the account.",
+    tc5: "5. Moderation and Responsibility: Platform administrators reserve the right to revoke access for users who violate these rules, without prior notice. The user is solely responsible for keeping their password confidential.",
+    tc6: "By continuing to use this platform, you confirm that you have read, understood, and fully accepted these rules."
   }
 };
 
@@ -107,7 +58,7 @@ export default function Login() {
   const [phone, setPhone] = useState("");
   const [studentClass, setStudentClass] = useState("");
   
-  const [currentLang, setCurrentLang] = useState("ro"); // Limba curentă pe ecran
+  const [currentLang, setCurrentLang] = useState("ro"); 
   
   const [isRegistering, setIsRegistering] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -115,7 +66,7 @@ export default function Login() {
   const [error, setError] = useState("");
   
   const router = useRouter();
-  const t = TRANSLATIONS[currentLang]; // Preluăm traducerile
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS["ro"];
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +88,6 @@ export default function Login() {
         const result = await createUserWithEmailAndPassword(auth, formattedEmail, password);
         let displayName = formattedEmail.split("@")[0].split(".").map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(" ");
         
-        // Salvăm și LIMBA în baza de date la creare!
         await setDoc(doc(db, "users", result.user.uid), { 
           uid: result.user.uid,
           email: result.user.email, 
@@ -146,10 +96,18 @@ export default function Login() {
           class: studentClass, 
           role: "student",
           interests: [],
-          language: currentLang, // Limba aleasă acum
+          language: currentLang,
           avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`,
           termsAcceptedAt: new Date().toISOString()
         });
+
+        await addDoc(collection(db, "users", result.user.uid, "notifications"), {
+          title: t.welcomeTitle,
+          message: t.welcomeMsg,
+          sentAt: new Date().toISOString(),
+          read: false
+        });
+
       } else {
         await signInWithEmailAndPassword(auth, formattedEmail, password);
       }
@@ -161,46 +119,47 @@ export default function Login() {
     }
   };
 
-  const inputClass = "w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all font-medium backdrop-blur-md bg-white/5 border border-white/10 text-white placeholder-gray-500 hover:bg-white/10";
+  const inputClass = "w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all font-bold backdrop-blur-md bg-white/10 border border-white/20 text-white placeholder-gray-300 hover:bg-white/20 shadow-inner";
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans bg-slate-950 selection:bg-red-500/30">
       
-      {/* BACKGROUND */}
       <div className="absolute inset-0 z-0">
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-red-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10000ms]"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[8000ms]"></div>
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
       </div>
 
-      {/* SELECTOR DE LIMBĂ */}
       <div className="absolute top-6 right-6 z-20">
-          <select value={currentLang} onChange={(e) => setCurrentLang(e.target.value)} className="bg-slate-900/80 text-white border border-white/10 rounded-xl px-4 py-2 font-bold outline-none cursor-pointer backdrop-blur-md shadow-lg hover:border-white/30 transition-colors">
-              <option value="ro">🇷🇴 RO</option>
-              <option value="en">🇬🇧 EN</option>
-              <option value="fr">🇫🇷 FR</option>
-              <option value="de">🇩🇪 DE</option>
-              <option value="es">🇪🇸 ES</option>
+          <select value={currentLang} onChange={(e) => setCurrentLang(e.target.value)} className="bg-slate-900/80 text-white border border-white/20 rounded-xl px-4 py-2 font-bold outline-none cursor-pointer backdrop-blur-xl shadow-lg hover:border-white/40 transition-colors">
+              <option value="ro" className="text-black bg-white">🇷🇴 RO</option>
+              <option value="en" className="text-black bg-white">🇬🇧 EN</option>
           </select>
       </div>
 
-      <div className="p-10 rounded-[2.5rem] max-w-md w-full z-10 mx-4 relative backdrop-blur-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] bg-slate-900/60">
+      <div className="p-10 rounded-[2.5rem] max-w-md w-full z-10 mx-4 relative backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.6)] bg-slate-900/40 my-8">
         <div className="flex flex-col items-center mb-8">
-          <img src="/favicon.ico" alt="Logo" className="w-20 h-20 rounded-[1.5rem] mb-5 shadow-2xl shadow-red-500/40 transform hover:scale-110 transition-transform duration-500 border border-white/10" />
-          <h1 className="text-4xl font-black tracking-tight text-white">Ghiba<span className="text-red-500">+</span></h1>
-          <p className="text-gray-400 mt-2 font-bold text-xs tracking-[0.2em] uppercase bg-white/5 px-4 py-1.5 rounded-full border border-white/5">{t.portal}</p>
+          <img src="/favicon.ico" alt="Logo" className="w-24 h-24 rounded-[2rem] mb-6 shadow-[0_10px_30px_rgba(239,68,68,0.3)] transform hover:scale-110 transition-transform duration-500 border border-white/20" />
+          <h1 className="text-4xl font-black tracking-tight text-white drop-shadow-md">Ghiba<span className="text-red-500">+</span></h1>
+          <p className="text-gray-300 mt-2 font-black text-[10px] tracking-[0.2em] uppercase bg-white/10 px-4 py-1.5 rounded-full border border-white/10 shadow-sm">{t.portal}</p>
         </div>
         
         <form onSubmit={handleAuth} className="space-y-4">
             <input type="email" placeholder={t.emailPlace} value={email} onChange={e => setEmail(e.target.value)} className={inputClass} required />
             
             {isRegistering && (
-                <div className="grid grid-cols-2 gap-3 animate-fade-in">
-                    <input type="tel" placeholder={t.phonePlace} value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} maxLength={10} className={inputClass} required />
-                    <select value={studentClass} onChange={e => setStudentClass(e.target.value)} className={`${inputClass} appearance-none text-gray-300`} required>
-                        <option value="" className="text-black bg-white">{t.classPlace}</option>
-                        {SCHOOL_CLASSES.map(c => <option key={c} value={c} className="text-black bg-white">{c}</option>)}
-                    </select>
+                <div className="animate-fade-in space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <input type="tel" placeholder={t.phonePlace} value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} maxLength={10} className={inputClass} required />
+                        <div>
+                            <select value={studentClass} onChange={e => setStudentClass(e.target.value)} className={`${inputClass} appearance-none`} required>
+                                <option value="" className="text-black bg-white">{t.classPlace}</option>
+                                {SCHOOL_CLASSES.map(c => <option key={c} value={c} className="text-black bg-white">{c}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    {/* AVERTISMENT SCHIMBARE CLASA */}
+                    <p className="text-[10px] text-red-400 font-bold ml-1 tracking-wide">{t.classWarning}</p>
                 </div>
             )}
             
@@ -209,41 +168,42 @@ export default function Login() {
             {isRegistering && (
                 <div className="animate-fade-in space-y-4">
                     <input type="password" placeholder={t.confirmPlace} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className={inputClass} required />
-                    <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
-                        <input type="checkbox" id="terms" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="mt-1 w-5 h-5 accent-red-600 cursor-pointer rounded-md shrink-0" />
-                        <label htmlFor="terms" className="text-xs leading-relaxed text-gray-300">
-                            {t.accept1} <button type="button" onClick={() => setShowTerms(true)} className="text-red-400 font-bold hover:text-red-300 underline underline-offset-2">{t.termsBtn}</button>{t.accept2}
+                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-black/30 border border-white/10">
+                        <input type="checkbox" id="terms" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} className="w-5 h-5 accent-red-500 cursor-pointer rounded-md shrink-0" />
+                        <label htmlFor="terms" className="text-xs leading-relaxed text-gray-300 font-medium">
+                            {t.accept1} <button type="button" onClick={() => setShowTerms(true)} className="text-red-400 font-bold hover:text-red-300 underline">{t.termsBtn}</button>{t.accept2}
                         </label>
                     </div>
                 </div>
             )}
             
-            <button className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all transform hover:scale-[1.02] active:scale-95 mt-4 text-lg border border-red-400/20">
+            <button className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl shadow-[0_10px_20px_rgba(220,38,38,0.3)] transition-all transform hover:-translate-y-1 mt-6 text-lg border border-red-500/50">
               {isRegistering ? t.btnRegister : t.btnLogin}
             </button>
         </form>
 
-        <div className="mt-8 text-center border-t border-white/10 pt-6">
+        <div className="mt-8 text-center pt-6">
             <button onClick={() => {setError(""); setIsRegistering(!isRegistering)}} className="text-gray-400 hover:text-white text-sm font-bold transition-colors">
                 {isRegistering ? t.switchLogin : t.switchRegister}
             </button>
         </div>
-        {error && <div className="mt-4 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-red-400 text-sm font-bold text-center animate-pulse">{error}</div>}
+        {error && <div className="mt-4 bg-red-500/20 border border-red-500/50 p-4 rounded-2xl text-red-200 text-sm font-bold text-center animate-pulse">{error}</div>}
       </div>
 
       {showTerms && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
-            <div className="w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl border bg-slate-900 border-white/10 text-white relative overflow-hidden">
-                <button onClick={() => setShowTerms(false)} className="absolute top-6 right-6 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 font-bold transition">✕</button>
-                <h2 className="text-2xl sm:text-3xl font-black mb-6 flex items-center gap-3"><span className="text-red-500">📄</span> {t.tTitle.replace('📄 ', '')}</h2>
-                <div className="overflow-y-auto max-h-[60vh] text-[13px] text-gray-300 space-y-5 pr-4 custom-scrollbar">
-                    <p><strong>{t.t1.split(':')[0]}:</strong> {t.t1.split(':')[1]}</p>
-                    <p><strong>{t.t2.split(':')[0]}:</strong> {t.t2.split(':')[1]}</p>
-                    <p><strong>{t.t3.split(':')[0]}:</strong> {t.t3.split(':')[1]}</p>
-                    <p><strong>{t.t4.split(':')[0]}:</strong> {t.t4.split(':')[1]}</p>
-                    <p><strong>{t.t5.split(':')[0]}:</strong> {t.t5.split(':')[1]}</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+            <div className="w-full max-w-3xl rounded-[2.5rem] p-8 sm:p-12 shadow-2xl border bg-slate-900 border-white/20 text-white relative overflow-hidden">
+                <button onClick={() => setShowTerms(false)} className="absolute top-6 right-6 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 font-bold transition">✕</button>
+                <h2 className="text-2xl sm:text-3xl font-black mb-8 flex items-center gap-3"><span className="text-red-500">📄</span> Termeni și Condiții</h2>
+                <div className="overflow-y-auto max-h-[60vh] text-sm text-gray-300 space-y-6 pr-4 custom-scrollbar font-medium leading-relaxed">
+                    <p><strong>{t.tc1.split(':')[0]}:</strong>{t.tc1.split(':')[1]}</p>
+                    <p><strong>{t.tc2.split(':')[0]}:</strong>{t.tc2.split(':')[1]}</p>
+                    <p><strong>{t.tc3.split(':')[0]}:</strong>{t.tc3.split(':')[1]}</p>
+                    <p><strong>{t.tc4.split(':')[0]}:</strong>{t.tc4.split(':')[1]}</p>
+                    <p><strong>{t.tc5.split(':')[0]}:</strong>{t.tc5.split(':')[1]}</p>
+                    <p className="pt-4 border-t border-white/10 text-center font-bold text-white italic">{t.tc6}</p>
                 </div>
-                <button onClick={() => setShowTerms(false)} className="mt-8 bg-white text-black w-full py-4 rounded-xl font-black text-lg hover:bg-gray-200 transition-colors shadow-xl">{t.tBtn}</button>
+                <button onClick={() => {setShowTerms(false); setAcceptedTerms(true);}} className="mt-8 bg-white text-black w-full py-4 rounded-2xl font-black text-lg hover:bg-gray-200 transition-colors shadow-xl">{t.tBtn}</button>
             </div>
         </div>
       )}
