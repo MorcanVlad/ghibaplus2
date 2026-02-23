@@ -2,40 +2,15 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../lib/firebase"; 
 import { useRouter } from "next/navigation";
-import { doc, getDoc, updateDoc, collection, query, getDocs, arrayUnion, arrayRemove, orderBy, onSnapshot, addDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, getDocs, arrayUnion, arrayRemove, orderBy, onSnapshot, addDoc, query } from "firebase/firestore";
 import { SCHOOL_CLASSES } from "../lib/constants";
 
 const TRANSLATIONS: any = {
-  ro: {
-    search: "Caută...", settings: "⚙️ Setări", admin: "ADMIN",
-    welcomeTitle: "Bine ai venit!", welcomeMsg: "Ne bucurăm să te avem pe GhibaPlus. Aici vei găsi toate noutățile școlii!",
-    joinEventTitle: "Înscriere Confirmată ✅", joinEventMsg: "Te-ai înscris cu succes la:", 
-    notif: "Notificări", noNotif: "Nicio notificare.", dateTime: "DATA/ORA", location: "LOCAȚIE", join: "Particip ✅", cancel: "Anulează", readMore: "📖 Citește mai mult", lang: "Limba Interfeței", class: "Clasa Ta (Blocat)", phone: "Număr de Telefon", save: "Salvează Setările", council: "Consiliul Elevilor", noSpots: "Locuri epuizate!"
-  },
-  en: {
-    search: "Search...", settings: "⚙️ Settings", admin: "ADMIN",
-    welcomeTitle: "Welcome!", welcomeMsg: "Glad to have you on GhibaPlus. Here you'll find all school news!",
-    joinEventTitle: "Registration Confirmed ✅", joinEventMsg: "Successfully joined:",
-    notif: "Notifications", noNotif: "No notifications.", dateTime: "DATE/TIME", location: "LOCATION", join: "Join ✅", cancel: "Cancel", readMore: "📖 Read More", lang: "Interface Language", class: "Your Class (Locked)", phone: "Phone Number", save: "Save Settings", council: "Student Council", noSpots: "No spots left!"
-  },
-  fr: {
-    search: "Recherche...", settings: "⚙️ Paramètres", admin: "ADMIN",
-    welcomeTitle: "Bienvenue !", welcomeMsg: "Heureux de vous avoir sur GhibaPlus !",
-    joinEventTitle: "Inscription confirmée ✅", joinEventMsg: "Inscrit à :",
-    notif: "Notifications", noNotif: "Pas de notifications.", dateTime: "DATE/HEURE", location: "LIEU", join: "Participer ✅", cancel: "Annuler", readMore: "📖 Détails", lang: "Langue", class: "Classe (Bloqué)", phone: "Téléphone", save: "Enregistrer", council: "Conseil", noSpots: "Complet!"
-  },
-  de: {
-    search: "Suche...", settings: "⚙️ Einstellungen", admin: "ADMIN",
-    welcomeTitle: "Willkommen!", welcomeMsg: "Schön, dass du bei GhibaPlus bist!",
-    joinEventTitle: "Anmeldung bestätigt ✅", joinEventMsg: "Beigetreten:",
-    notif: "Benachrichtigungen", noNotif: "Keine Nachrichten.", dateTime: "DATUM/ZEIT", location: "ORT", join: "Teilnehmen ✅", cancel: "Stornieren", readMore: "📖 Details", lang: "Sprache", class: "Klasse (Gesperrt)", phone: "Telefon", save: "Speichern", council: "Schülerrat", noSpots: "Voll!"
-  },
-  es: {
-    search: "Buscar...", settings: "⚙️ Ajustes", admin: "ADMIN",
-    welcomeTitle: "¡Bienvenido!", welcomeMsg: "Nos alegra tenerte en GhibaPlus.",
-    joinEventTitle: "Registro Confirmado ✅", joinEventMsg: "Te uniste a:",
-    notif: "Notificaciones", noNotif: "Sin notificaciones.", dateTime: "FECHA", location: "UBICACIÓN", join: "Participar ✅", cancel: "Cancelar", readMore: "📖 Detalles", lang: "Idioma", class: "Clase (Bloqueado)", phone: "Teléfono", save: "Guardar", council: "Consejo", noSpots: "¡Lleno!"
-  }
+  ro: { search: "Caută...", settings: "⚙️ Setări", admin: "ADMIN", welcomeTitle: "Bine ai venit!", welcomeMsg: "Ne bucurăm să te avem pe GhibaPlus. Aici vei găsi toate noutățile școlii!", joinEventTitle: "Înscriere Confirmată ✅", joinEventMsg: "Te-ai înscris cu succes la:", notif: "Notificări", noNotif: "Nicio notificare.", dateTime: "DATA / ORA", location: "LOCAȚIE", join: "Particip ✅", cancel: "Anulează", readMore: "📖 Citește mai mult", lang: "Limba Interfeței", class: "Clasa Ta (Blocat)", phone: "Număr de Telefon", save: "Salvează Setările", council: "Consiliul Elevilor", noSpots: "Locuri epuizate!" },
+  en: { search: "Search...", settings: "⚙️ Settings", admin: "ADMIN", welcomeTitle: "Welcome!", welcomeMsg: "Glad to have you on GhibaPlus. Here you'll find all school news!", joinEventTitle: "Registration Confirmed ✅", joinEventMsg: "Successfully joined:", notif: "Notifications", noNotif: "No notifications.", dateTime: "DATE / TIME", location: "LOCATION", join: "Join ✅", cancel: "Cancel", readMore: "📖 Read More", lang: "Interface Language", class: "Your Class (Locked)", phone: "Phone Number", save: "Save Settings", council: "Student Council", noSpots: "No spots left!" },
+  fr: { search: "Recherche...", settings: "⚙️ Paramètres", admin: "ADMIN", welcomeTitle: "Bienvenue !", welcomeMsg: "Heureux de vous avoir sur GhibaPlus !", joinEventTitle: "Inscription confirmée ✅", joinEventMsg: "Inscrit à :", notif: "Notifications", noNotif: "Pas de notifications.", dateTime: "DATE / HEURE", location: "LIEU", join: "Participer ✅", cancel: "Annuler", readMore: "📖 Détails", lang: "Langue", class: "Classe (Bloqué)", phone: "Téléphone", save: "Enregistrer", council: "Conseil", noSpots: "Complet!" },
+  de: { search: "Suche...", settings: "⚙️ Einstellungen", admin: "ADMIN", welcomeTitle: "Willkommen!", welcomeMsg: "Schön, dass du bei GhibaPlus bist!", joinEventTitle: "Anmeldung bestätigt ✅", joinEventMsg: "Beigetreten:", notif: "Benachrichtigungen", noNotif: "Keine Nachrichten.", dateTime: "DATUM / ZEIT", location: "ORT", join: "Teilnehmen ✅", cancel: "Stornieren", readMore: "📖 Details", lang: "Sprache", class: "Klasse (Gesperrt)", phone: "Telefon", save: "Speichern", council: "Schülerrat", noSpots: "Voll!" },
+  es: { search: "Buscar...", settings: "⚙️ Ajustes", admin: "ADMIN", welcomeTitle: "¡Bienvenido!", welcomeMsg: "Nos alegra tenerte en GhibaPlus.", joinEventTitle: "Registro Confirmado ✅", joinEventMsg: "Te uniste a:", notif: "Notificaciones", noNotif: "Sin notificaciones.", dateTime: "FECHA / HORA", location: "UBICACIÓN", join: "Participar ✅", cancel: "Cancelar", readMore: "📖 Detalles", lang: "Idioma", class: "Clase (Bloqueado)", phone: "Teléfono", save: "Guardar", council: "Consejo", noSpots: "¡Lleno!" }
 };
 
 export default function Dashboard() {
@@ -68,12 +43,21 @@ export default function Dashboard() {
   }, []);
 
   const loadFeed = async () => {
-    const nSnap = await getDocs(query(collection(db, "news"), orderBy("postedAt", "desc")));
-    const aSnap = await getDocs(query(collection(db, "activities"), orderBy("postedAt", "desc")));
-    let items = [...nSnap.docs.map(d=>({id:d.id,col:'news',...d.data()})), ...aSnap.docs.map(d=>({id:d.id,col:'activities',...d.data()}))];
-    items.sort((a:any, b:any) => new Date(b.postedAt||b.date).getTime() - new Date(a.postedAt||a.date).getTime());
-    setFeed(items);
-    setCalendarEvents(aSnap.docs.map(d=>({id:d.id, title:d.data().title, start:d.data().date, type:'activity', targetClasses:d.data().targetClasses})).filter(ev=>ev.start));
+    const nSnap = await getDocs(collection(db, "news"));
+    const aSnap = await getDocs(collection(db, "calendar_events"));
+    
+    let allItems = [
+        ...nSnap.docs.map(d=>({id:d.id, col:'news', ...d.data()})), 
+        ...aSnap.docs.map(d=>({id:d.id, col:'calendar_events', ...d.data()}))
+    ];
+    
+    allItems.sort((a:any, b:any) => new Date(b.postedAt||b.date||0).getTime() - new Date(a.postedAt||a.date||0).getTime());
+    
+    // În Feed ajung doar știrile și evenimentele (holiday-urile sunt excluse)
+    setFeed(allItems.filter(item => item.type !== 'holiday'));
+    
+    // În Calendar ajung toate elementele din colecția calendar_events (inclusiv activități și vacanțe)
+    setCalendarEvents(allItems.filter(item => item.col === 'calendar_events'));
   };
 
   const t = TRANSLATIONS[editLang] || TRANSLATIONS["ro"];
@@ -96,14 +80,17 @@ export default function Dashboard() {
   };
 
   const handleRegister = async (item: any) => {
+    if (item.type === 'holiday') return; 
     const isReg = item.attendees?.some((a:any) => a.id === user.id);
-    const ref = doc(db, "activities", item.id);
+    const ref = doc(db, "calendar_events", item.id);
     const newAttendees = isReg ? item.attendees.filter((a:any)=>a.id!==user.id) : [...(item.attendees||[]), {id:user.id, name:user.name, class:user.class, phone:user.phone}];
     if(!isReg && item.maxSpots && newAttendees.length > item.maxSpots) return alert(t.noSpots);
     
     await updateDoc(ref, { attendees: newAttendees });
-    // SALVAM TIPUL SI NUMELE EVENIMENTULUI PENTRU TRADUCERE DINAMICA
     if(!isReg) await addDoc(collection(db, "users", user.id, "notifications"), { type: "join_event", eventTitle: item.title, sentAt: new Date().toISOString(), read: false });
+    
+    // Update local state instantly for modal
+    setSelectedPost((prev: any) => ({ ...prev, attendees: newAttendees }));
     loadFeed();
   };
 
@@ -111,6 +98,26 @@ export default function Dashboard() {
     const isLiked = item.likes?.includes(user.id);
     await updateDoc(doc(db, item.col, item.id), { likes: isLiked ? arrayRemove(user.id) : arrayUnion(user.id) });
     loadFeed();
+  };
+
+  const formatEventDateTime = (item: any) => {
+    if (!item.date) return "";
+    const startD = new Date(item.date).toLocaleDateString('ro-RO');
+    let res = startD;
+    
+    if (item.endDate && item.endDate !== item.date && !item.endDate.includes(item.date.split('T')[0])) {
+        const endD = new Date(item.endDate).toLocaleDateString('ro-RO');
+        if (startD !== endD) res += ` - ${endD}`;
+    }
+    
+    if (item.hasTime) {
+        const t1 = item.startTime || "";
+        const t2 = item.endTime ? ` - ${item.endTime}` : "";
+        if (t1) res += ` | ⏰ ${t1}${t2}`;
+    } else if (item.hasTime === undefined && item.date.includes("T") && !item.date.endsWith("T00:00:00") && !item.date.endsWith("T00:00")) {
+        res += ` | ⏰ ${new Date(item.date).toLocaleTimeString('ro-RO', {hour: '2-digit', minute:'2-digit'})}`;
+    }
+    return res;
   };
 
   if (!user) return null;
@@ -157,7 +164,7 @@ export default function Dashboard() {
               <div className="p-8">
                 <div className="flex gap-5 items-start mb-6">
                   {item.type === 'activity' && item.date ? (
-                     <div className="bg-gradient-to-br from-red-500 to-rose-600 text-white px-5 py-3 rounded-2xl flex flex-col items-center shadow-lg border border-red-400/30">
+                     <div className={`text-white px-5 py-3 rounded-2xl flex flex-col items-center shadow-lg border bg-gradient-to-br from-red-500 to-rose-600 border-red-400/30`}>
                         <span className="text-2xl font-black leading-none mb-1">{new Date(item.date).getDate()}</span>
                         <span className="text-[10px] font-black uppercase">{new Date(item.date).toLocaleString(editLang, {month:'short'})}</span>
                      </div>
@@ -166,7 +173,7 @@ export default function Dashboard() {
                   )}
                   <div>
                     <h2 className="text-xl sm:text-2xl font-black mb-1">{item.title}</h2>
-                    <p className="opacity-60 text-xs font-bold uppercase tracking-widest">{item.authorName || item.organizers || t.council}</p>
+                    {(item.authorName || item.organizers) && <p className="opacity-60 text-xs font-bold uppercase tracking-widest">{item.authorName || item.organizers || t.council}</p>}
                   </div>
                 </div>
                 {item.imageUrl && <div className="h-64 w-full rounded-2xl mb-6 bg-cover bg-center border border-black/10 dark:border-white/10" style={{backgroundImage:`url(${item.imageUrl})`}}></div>}
@@ -174,9 +181,9 @@ export default function Dashboard() {
                 <p className="line-clamp-3 opacity-80 mb-6 text-sm sm:text-base leading-relaxed">{item.content}</p>
                 
                 {item.type === 'activity' && (
-                    <div className={`mb-6 p-4 sm:p-5 rounded-2xl border grid grid-cols-2 gap-4 ${darkMode ? 'bg-black/30 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
-                        <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.dateTime}</span><span className="font-bold text-blue-500 text-xs sm:text-sm">{new Date(item.date).toLocaleString('ro-RO')}</span></div>
-                        <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.location}</span><span className="font-bold text-xs sm:text-sm">{item.location}</span></div>
+                    <div className={`mb-6 p-4 sm:p-5 rounded-2xl border grid gap-4 ${item.location ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'} ${darkMode ? 'bg-black/30 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                        <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.dateTime}</span><span className="font-bold text-blue-500 text-xs sm:text-sm">{formatEventDateTime(item)}</span></div>
+                        {item.location && <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.location}</span><span className="font-bold text-xs sm:text-sm">{item.location}</span></div>}
                     </div>
                 )}
 
@@ -202,16 +209,18 @@ export default function Dashboard() {
             <h3 className="font-black text-xl mb-6">📅 Calendar</h3>
             <div className="space-y-3">
                 {calendarEvents.map(ev => (
-                    <div key={ev.id} className={`p-4 rounded-2xl border transition-colors relative overflow-hidden ${darkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
-                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+                    // Când dă click pe elementul din calendar, deschidem modalul automat
+                    <div key={ev.id} onClick={() => setSelectedPost(ev)} className={`cursor-pointer p-4 rounded-2xl border transition-all relative overflow-hidden transform hover:scale-[1.02] hover:shadow-lg ${darkMode ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-slate-50 border-slate-200 hover:bg-white'}`}>
+                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ev.type === 'holiday' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
                         <div className="font-bold text-sm ml-2 line-clamp-1">{ev.title}</div>
-                        <div className="text-[10px] opacity-60 ml-2 mt-1 font-mono">{new Date(ev.start).toLocaleString('ro-RO')}</div>
+                        <div className="text-[10px] opacity-60 ml-2 mt-1 font-mono">{formatEventDateTime(ev)}</div>
                     </div>
                 ))}
             </div>
         </div>
       </main>
 
+      {/* MODAL SETARI */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`w-full max-w-lg p-10 rounded-[2.5rem] border shadow-2xl relative ${cardBg}`}>
@@ -231,7 +240,6 @@ export default function Dashboard() {
                 <div>
                     <label className="text-[10px] font-black tracking-widest uppercase opacity-50 mb-2 block">{t.class}</label>
                     <input value={user.class} disabled className={`w-full p-4 rounded-2xl font-bold border opacity-50 cursor-not-allowed ${inputBg}`} />
-                    <p className="text-[10px] text-red-500 mt-2 font-bold">🔒 Clasa poate fi modificată doar de un Administrator.</p>
                 </div>
                 <div>
                     <label className="text-[10px] font-black tracking-widest uppercase opacity-50 mb-2 block">{t.phone}</label>
@@ -243,15 +251,15 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* MODAL NOTIFICARI */}
       {showNotif && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`w-full max-w-md p-8 rounded-[2.5rem] border shadow-2xl relative ${cardBg}`}>
             <button onClick={() => setShowNotif(false)} className="absolute top-6 right-6 w-10 h-10 bg-black/10 dark:bg-white/10 rounded-full font-bold">✕</button>
             <h2 className="text-2xl font-black mb-6">{t.notif}</h2>
             <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
               {notifications.length === 0 && <p className="opacity-50 italic text-center py-10">{t.noNotif}</p>}
               {notifications.map(n => {
-                // LOGICA DE TRADUCERE DINAMICA
                 const notifTitle = n.type === 'welcome' ? t.welcomeTitle : (n.type === 'join_event' ? t.joinEventTitle : n.title);
                 const notifMsg = n.type === 'welcome' ? t.welcomeMsg : (n.type === 'join_event' ? `${t.joinEventMsg} ${n.eventTitle}` : n.message);
 
@@ -275,16 +283,27 @@ export default function Dashboard() {
               <button onClick={() => setSelectedPost(null)} className="absolute top-4 right-4 z-10 w-12 h-12 bg-black/50 text-white rounded-full font-black backdrop-blur-md border border-white/20">✕</button>
               {selectedPost.imageUrl && <div className="h-48 sm:h-72 w-full bg-cover bg-center" style={{backgroundImage:`url(${selectedPost.imageUrl})`}}></div>}
               <div className="p-6 sm:p-10">
+                
+                {/* Pop-up-ul arată un badge dacă e vacanță */}
+                <div className="mb-4">
+                     <span className={`text-[10px] uppercase font-black px-3 py-1 rounded-full ${selectedPost.type === 'holiday' ? 'bg-yellow-500/20 text-yellow-500' : (selectedPost.type === 'activity' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500')}`}> 
+                         {selectedPost.type === 'holiday' ? 'Vacanță / Zi Liberă' : (selectedPost.type === 'activity' ? 'Eveniment' : 'Anunț')} 
+                     </span>
+                </div>
+
                 <h2 className="text-2xl sm:text-3xl font-black mb-6">{selectedPost.title}</h2>
                 <p className="text-base sm:text-lg leading-relaxed opacity-90 whitespace-pre-wrap mb-8">{selectedPost.content}</p>
-                {selectedPost.type === 'activity' && (
-                    <div className={`mb-6 p-4 sm:p-5 rounded-2xl border grid grid-cols-2 gap-4 ${darkMode ? 'bg-black/30 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
-                        <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.dateTime}</span><span className="font-bold text-blue-500 text-sm sm:text-base">{new Date(selectedPost.date).toLocaleString('ro-RO')}</span></div>
-                        <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.location}</span><span className="font-bold text-sm sm:text-base">{selectedPost.location}</span></div>
+                
+                {(selectedPost.type === 'activity' || selectedPost.type === 'holiday') && (
+                    <div className={`mb-6 p-4 sm:p-5 rounded-2xl border grid gap-4 ${selectedPost.location ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'} ${darkMode ? 'bg-black/30 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                        <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.dateTime}</span><span className="font-bold text-blue-500 text-sm sm:text-base">{formatEventDateTime(selectedPost)}</span></div>
+                        {selectedPost.location && <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.location}</span><span className="font-bold text-sm sm:text-base">{selectedPost.location}</span></div>}
                     </div>
                 )}
+
+                {/* Butonul de participare dispare complet dacă este vacanță */}
                 {selectedPost.type === 'activity' && (
-                  <button onClick={() => { handleRegister(selectedPost); setSelectedPost(null); }} className={`w-full py-4 rounded-2xl font-black text-lg shadow-xl ${selectedPost.attendees?.some((a:any)=>a.id===user.id) ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-green-600 text-white'}`}>
+                  <button onClick={() => handleRegister(selectedPost)} className={`w-full py-4 rounded-2xl font-black text-lg shadow-xl transition-colors ${selectedPost.attendees?.some((a:any)=>a.id===user.id) ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white' : 'bg-green-600 text-white hover:bg-green-500'}`}>
                     {selectedPost.attendees?.some((a:any)=>a.id===user.id) ? t.cancel : t.join}
                   </button>
                 )}

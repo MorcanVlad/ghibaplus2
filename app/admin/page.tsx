@@ -22,13 +22,22 @@ export default function AdminPanel() {
   const [notifBody, setNotifBody] = useState("");
   const [selectedClassNotif, setSelectedClassNotif] = useState("Toată Școala");
 
-  const [evDate, setEvDate] = useState("");
+  const [eventType, setEventType] = useState("activity"); 
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [hasTime, setHasTime] = useState(false);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [evLoc, setEvLoc] = useState("");
   const [spots, setSpots] = useState(30);
 
   const [emailList, setEmailList] = useState("");
   const [whitelistSearch, setWhitelistSearch] = useState("");
+  const [userSearch, setUserSearch] = useState("");
   const [viewAttendeesModal, setViewAttendeesModal] = useState<any>(null);
+
+  // NOU: STATE PENTRU EDITARE
+  const [editingPost, setEditingPost] = useState<any>(null);
 
   const router = useRouter();
 
@@ -49,9 +58,16 @@ export default function AdminPanel() {
     const wSnap = await getDocs(collection(db, "whitelist"));
     setWhitelistDb(wSnap.docs.map(d => ({id:d.id, ...d.data()})));
 
-    const nSnap = await getDocs(query(collection(db, "news"), orderBy("postedAt", "desc")));
-    const aSnap = await getDocs(query(collection(db, "activities"), orderBy("postedAt", "desc")));
-    setPosts([...nSnap.docs.map(d=>({id:d.id, col:'news', ...d.data()})), ...aSnap.docs.map(d=>({id:d.id, col:'activities', ...d.data()}))].sort((a:any,b:any) => new Date(b.postedAt || b.date).getTime() - new Date(a.postedAt || a.date).getTime()));
+    const nSnap = await getDocs(collection(db, "news"));
+    const aSnap = await getDocs(collection(db, "calendar_events"));
+    
+    const allItems = [
+        ...nSnap.docs.map(d=>({id:d.id, col:'news', ...d.data()})), 
+        ...aSnap.docs.map(d=>({id:d.id, col:'calendar_events', ...d.data()}))
+    ];
+    
+    allItems.sort((a:any, b:any) => new Date(b.postedAt || b.date || 0).getTime() - new Date(a.postedAt || a.date || 0).getTime());
+    setPosts(allItems);
   };
 
   const handleDelete = async (id: string, col: string) => {
@@ -66,7 +82,6 @@ export default function AdminPanel() {
     fetchData();
   };
 
-  // NOTIFICARI CUSTOM MANUALE
   const handleSendNotif = async () => {
     if(!notifTitle || !notifBody) return alert("Completează titlul și mesajul!");
     const targetUsers = selectedClassNotif === "Toată Școala" ? users : users.filter(u => u.class === selectedClassNotif);
@@ -74,7 +89,6 @@ export default function AdminPanel() {
     if(!confirm(`Trimitem notificarea către ${targetUsers.length} elevi?`)) return;
 
     for (const u of targetUsers) {
-      // Tip default, vor fi afișate exact cum le-ai scris, în română.
       await addDoc(collection(db, "users", u.id, "notifications"), { title: notifTitle, message: notifBody, sentAt: new Date().toISOString(), read: false });
     }
     alert("🚀 Notificări trimise cu succes!");
@@ -98,8 +112,50 @@ export default function AdminPanel() {
 
   const handleSaveActivity = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addDoc(collection(db, "activities"), { type: "activity", title, content, imageUrl, date: evDate, location: evLoc, organizers: authorName || "Consiliul Elevilor", maxSpots: spots, targetClasses: selectedClasses.length === 0 ? ["Toată Școala"] : selectedClasses, postedAt: new Date().toISOString(), likes: [], attendees: [] });
-    alert("✅ Eveniment Creat!"); setTitle(""); setContent(""); setImageUrl(""); setAuthorName(""); setEvDate(""); setEvLoc(""); setSelectedClasses([]); fetchData();
+    const finalDateISO = startDate ? (hasTime && startTime ? `${startDate}T${startTime}` : `${startDate}T00:00:00`) : new Date().toISOString();
+    const finalEndDateISO = endDate ? (hasTime && endTime ? `${endDate}T${endTime}` : `${endDate}T00:00:00`) : finalDateISO;
+
+    const eventData: any = { 
+        type: eventType, title, content, imageUrl, 
+        date: finalDateISO, endDate: finalEndDateISO, hasTime, startTime, endTime,
+        targetClasses: selectedClasses.length === 0 ? ["Toată Școala"] : selectedClasses, 
+        postedAt: new Date().toISOString(), likes: []
+    };
+
+    if (eventType === 'activity') {
+        eventData.location = evLoc;
+        eventData.organizers = authorName || "Consiliul Elevilor";
+        eventData.maxSpots = spots;
+        eventData.attendees = [];
+    }
+
+    await addDoc(collection(db, "calendar_events"), eventData);
+    alert("✅ Salvat cu succes în Calendar!"); 
+    setTitle(""); setContent(""); setImageUrl(""); setAuthorName(""); 
+    setStartDate(""); setEndDate(""); setHasTime(false); setStartTime(""); setEndTime("");
+    setEvLoc(""); setSelectedClasses([]); setEventType("activity"); fetchData();
+  };
+
+  // NOU: Funcția care salvează Editarea
+  const handleUpdateEditingPost = async () => {
+      try {
+          const ref = doc(db, editingPost.col, editingPost.id);
+          const dataToUpdate = {
+              title: editingPost.title,
+              content: editingPost.content,
+          };
+          if (editingPost.col === 'calendar_events') {
+              (dataToUpdate as any).location = editingPost.location;
+              (dataToUpdate as any).maxSpots = editingPost.maxSpots;
+          }
+          await updateDoc(ref, dataToUpdate);
+          alert("✅ Postare actualizată!");
+          setEditingPost(null);
+          fetchData();
+      } catch (err) {
+          console.error(err);
+          alert("Eroare la actualizare.");
+      }
   };
 
   const handleAddWhitelist = async () => {
@@ -165,18 +221,22 @@ export default function AdminPanel() {
                         <div key={p.id} className={`flex justify-between items-center p-5 rounded-2xl border transition-colors ${darkMode ? 'bg-black/40 border-white/5 hover:border-white/10' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}>
                             <div>
                                 <div className="font-bold mb-1 flex items-center gap-2">
-                                    <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded ${p.type === 'activity' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}> {p.type === 'activity' ? 'Eveniment' : 'Anunț'} </span>
-                                    {p.title} <span className={`text-xs font-normal opacity-60`}>({p.authorName || p.organizers})</span>
+                                    <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded ${p.type === 'holiday' ? 'bg-yellow-500/20 text-yellow-600' : (p.type === 'activity' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500')}`}> 
+                                        {p.type === 'holiday' ? 'Vacanță' : (p.type === 'activity' ? 'Eveniment' : 'Anunț')} 
+                                    </span>
+                                    {p.title} <span className={`text-xs font-normal opacity-60`}>{p.authorName || p.organizers ? `(${p.authorName || p.organizers})` : ''}</span>
                                 </div>
                                 <div className={`text-xs line-clamp-1 opacity-60`}>{p.content}</div>
                             </div>
-                            
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap justify-end">
                                 {p.type === 'activity' && (
-                                    <button onClick={() => setViewAttendeesModal(p)} className="bg-blue-500/10 text-blue-500 px-4 py-2.5 rounded-xl font-bold hover:bg-blue-600 hover:text-white transition hidden sm:block">
-                                        Vezi Înscriși ({p.attendees?.length || 0})
+                                    <button onClick={() => setViewAttendeesModal(p)} className="bg-blue-500/10 text-blue-500 px-4 py-2.5 rounded-xl font-bold hover:bg-blue-600 hover:text-white transition">
+                                        👥 ({p.attendees?.length || 0})
                                     </button>
                                 )}
+                                {/* BUTON EDITARE */}
+                                <button onClick={() => setEditingPost(p)} className="bg-yellow-500/10 text-yellow-600 px-4 py-2.5 rounded-xl font-bold hover:bg-yellow-500 hover:text-white transition">Editează</button>
+                                
                                 <button onClick={() => handleDelete(p.id, p.col)} className="bg-red-500/10 text-red-500 px-4 py-2.5 rounded-xl font-bold hover:bg-red-600 hover:text-white transition">Șterge</button>
                             </div>
                         </div>
@@ -185,12 +245,50 @@ export default function AdminPanel() {
             </div>
         )}
 
-        {/* MODAL VEZI INSCRIȘI */}
+        {/* MODAL PENTRU EDITAREA POSTARILOR */}
+        {editingPost && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+                <div className={`border p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative overflow-y-auto max-h-[90vh] custom-scrollbar ${darkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200 text-slate-900'}`}>
+                    <button onClick={() => setEditingPost(null)} className={`absolute top-6 right-6 w-8 h-8 rounded-full flex items-center justify-center font-bold transition ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'}`}>✕</button>
+                    
+                    <h2 className="text-2xl font-black mb-6">✏️ Editează Postarea</h2>
+                    
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-[10px] font-black uppercase opacity-50 block mb-2">Titlu</label>
+                            <input className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={editingPost.title} onChange={e=>setEditingPost({...editingPost, title: e.target.value})} />
+                        </div>
+                        
+                        <div>
+                            <label className="text-[10px] font-black uppercase opacity-50 block mb-2">Conținut</label>
+                            <textarea className={`w-full p-4 rounded-2xl outline-none border h-32 resize-none ${inputBg}`} value={editingPost.content} onChange={e=>setEditingPost({...editingPost, content: e.target.value})} />
+                        </div>
+
+                        {editingPost.col === 'calendar_events' && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase opacity-50 block mb-2">Locație (dacă e cazul)</label>
+                                    <input className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={editingPost.location || ""} onChange={e=>setEditingPost({...editingPost, location: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase opacity-50 block mb-2">Locuri</label>
+                                    <input type="number" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={editingPost.maxSpots || 0} onChange={e=>setEditingPost({...editingPost, maxSpots: Number(e.target.value)})} />
+                                </div>
+                            </div>
+                        )}
+
+                        <button onClick={handleUpdateEditingPost} className="w-full py-4 mt-4 bg-yellow-500 text-white rounded-2xl font-black text-lg hover:bg-yellow-400 transition shadow-lg shadow-yellow-500/20">
+                            Salvează Modificările
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {viewAttendeesModal && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
                 <div className={`border p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative overflow-hidden ${darkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200 text-slate-900'}`}>
                     <button onClick={() => setViewAttendeesModal(null)} className={`absolute top-6 right-6 w-8 h-8 rounded-full flex items-center justify-center font-bold transition ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'}`}>✕</button>
-                    
                     <h2 className="text-2xl font-black mb-1">Lista Participanți</h2>
                     <p className="text-xs text-green-500 font-bold uppercase tracking-wider mb-6">{viewAttendeesModal.title}</p>
                     
@@ -206,7 +304,6 @@ export default function AdminPanel() {
                             ))
                         )}
                     </div>
-
                     <button onClick={() => downloadAttendeesCSV(viewAttendeesModal)} disabled={!viewAttendeesModal.attendees || viewAttendeesModal.attendees.length === 0} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-lg hover:bg-blue-500 transition shadow-xl disabled:opacity-50">
                         Descarcă Lista (CSV)
                     </button>
@@ -216,9 +313,11 @@ export default function AdminPanel() {
 
         {activeTab === "users" && (
           <div className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl ${cardBg}`}>
-            <h2 className="text-2xl font-black mb-8">👥 Gestiune Elevi</h2>
+            <h2 className="text-2xl font-black mb-4">👥 Gestiune Elevi</h2>
+            <input placeholder="Caută elev după nume sau email..." className={`w-full p-4 mb-6 rounded-2xl outline-none border focus:border-red-500 transition-colors ${inputBg}`} value={userSearch} onChange={e => setUserSearch(e.target.value)} />
+
             <div className="grid gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-              {users.map(u => (
+              {users.filter(u => u.name?.toLowerCase().includes(userSearch.toLowerCase()) || u.email?.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
                 <div key={u.id} className={`p-4 sm:p-6 rounded-2xl border flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 ${darkMode ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                   <div>
                     <p className="font-black text-lg">{u.name}</p>
@@ -233,6 +332,9 @@ export default function AdminPanel() {
                   </div>
                 </div>
               ))}
+              {users.filter(u => u.name?.toLowerCase().includes(userSearch.toLowerCase()) || u.email?.toLowerCase().includes(userSearch.toLowerCase())).length === 0 && (
+                  <p className="text-center opacity-50 italic mt-4">Niciun elev găsit.</p>
+              )}
             </div>
           </div>
         )}
@@ -254,20 +356,63 @@ export default function AdminPanel() {
 
         {activeTab === "events" && (
             <form onSubmit={handleSaveActivity} className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl ${cardBg}`}>
-                <h2 className="text-2xl font-black mb-6 text-green-500">📅 Postează Eveniment</h2>
-                <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                    <input placeholder="Titlu Eveniment" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={title} onChange={e=>setTitle(e.target.value)} required />
-                    <input placeholder="Organizator (ex: C.S.E.)" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={authorName} onChange={e=>setAuthorName(e.target.value)} />
+                <h2 className="text-2xl font-black mb-6 text-green-500">📅 Calendar & Evenimente</h2>
+                
+                <div className="mb-6">
+                    <label className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-2">Tip Înregistrare</label>
+                    <select value={eventType} onChange={e=>setEventType(e.target.value)} className={`w-full p-4 rounded-2xl outline-none font-bold border cursor-pointer ${inputBg}`}>
+                        <option value="activity" className="text-black bg-white">🎟️ Eveniment cu Înscriere / Participare</option>
+                        <option value="holiday" className="text-black bg-white">🌴 Vacanță / Zi Liberă (Doar informativ)</option>
+                    </select>
                 </div>
-                <textarea placeholder="Detalii, cerințe..." className={`w-full p-4 rounded-2xl outline-none border h-24 resize-none mb-4 ${inputBg}`} value={content} onChange={e=>setContent(e.target.value)} required />
+
                 <div className="grid sm:grid-cols-2 gap-4 mb-4">
-                    <div><label className="text-[10px] font-black uppercase opacity-50 block mb-2">DATA & ORA</label><input type="datetime-local" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={evDate} onChange={e=>setEvDate(e.target.value)} required /></div>
-                    <div><label className="text-[10px] font-black uppercase opacity-50 block mb-2">LOCURI</label><input type="number" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={spots} onChange={e=>setSpots(Number(e.target.value))} required /></div>
+                    <input placeholder={eventType === 'holiday' ? "Titlu Vacanță (ex: Vacanța de Primăvară)" : "Titlu Eveniment"} className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={title} onChange={e=>setTitle(e.target.value)} required />
+                    {eventType === 'activity' && <input placeholder="Organizator (ex: C.S.E.)" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={authorName} onChange={e=>setAuthorName(e.target.value)} />}
                 </div>
-                <input placeholder="Locație" className={`w-full p-4 rounded-2xl outline-none border mb-6 ${inputBg}`} value={evLoc} onChange={e=>setEvLoc(e.target.value)} required />
+                
+                <textarea placeholder="Detalii suplimentare..." className={`w-full p-4 rounded-2xl outline-none border h-24 resize-none mb-4 ${inputBg}`} value={content} onChange={e=>setContent(e.target.value)} required />
+                
+                <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label className="text-[10px] font-black uppercase opacity-50 block mb-2">Din data</label>
+                        <input type="date" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={startDate} onChange={e=>setStartDate(e.target.value)} required />
+                    </div>
+                    <div>
+                        <div className="flex justify-between items-end mb-2">
+                            <label className="text-[10px] font-black uppercase opacity-50 block">Până în</label>
+                            <button type="button" onClick={() => setEndDate(startDate)} className="text-[10px] bg-green-500/20 text-green-500 px-3 py-1 rounded-lg font-bold hover:bg-green-500 hover:text-white transition">Același ca Start</button>
+                        </div>
+                        <input type="date" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={endDate} onChange={e=>setEndDate(e.target.value)} required />
+                    </div>
+                </div>
+
+                <div className={`mb-4 p-5 rounded-2xl border transition-all ${darkMode ? 'bg-black/30 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" checked={hasTime} onChange={e=>setHasTime(e.target.checked)} className="w-5 h-5 accent-green-500 cursor-pointer rounded" />
+                        <span className="font-bold text-sm">⏰ Adaugă Oră (Opțional)</span>
+                    </label>
+                    {hasTime && (
+                        <div className="grid grid-cols-2 gap-4 mt-4 animate-fade-in">
+                            <div><label className="text-[10px] font-black uppercase opacity-50 block mb-2">Ora Începerii</label><input type="time" className={`w-full p-3 rounded-xl outline-none border ${inputBg}`} value={startTime} onChange={e=>setStartTime(e.target.value)} required /></div>
+                            <div><label className="text-[10px] font-black uppercase opacity-50 block mb-2">Ora Finalizării</label><input type="time" className={`w-full p-3 rounded-xl outline-none border ${inputBg}`} value={endTime} onChange={e=>setEndTime(e.target.value)} /></div>
+                        </div>
+                    )}
+                </div>
+
+                {eventType === 'activity' && (
+                    <div className="grid sm:grid-cols-2 gap-4 mb-6 animate-fade-in">
+                        <div><label className="text-[10px] font-black uppercase opacity-50 block mb-2">LOCAȚIE</label><input placeholder="Ex: Sala Festivă" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={evLoc} onChange={e=>setEvLoc(e.target.value)} required /></div>
+                        <div><label className="text-[10px] font-black uppercase opacity-50 block mb-2">LOCURI</label><input type="number" className={`w-full p-4 rounded-2xl outline-none border ${inputBg}`} value={spots} onChange={e=>setSpots(Number(e.target.value))} required /></div>
+                    </div>
+                )}
+                
                 <p className="text-[10px] font-black tracking-widest text-green-500 uppercase mb-3">Afișează Doar Pentru</p>
                 <div className="flex flex-wrap gap-2 mb-6">{SCHOOL_CLASSES.map(c => <button key={c} type="button" onClick={() => toggleClass(c)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${selectedClasses.includes(c) ? 'bg-green-600 border-green-500 text-white' : `${darkMode?'bg-white/5 border-white/10 text-gray-400':'bg-slate-100 border-slate-200 text-slate-600'}`}`}>{c}</button>)}</div>
-                <button className="w-full py-4 bg-green-600 text-white rounded-2xl font-black text-lg hover:bg-green-500 transition">Creează Eveniment</button>
+                
+                <button className="w-full py-4 bg-green-600 text-white rounded-2xl font-black text-lg hover:bg-green-500 transition shadow-lg shadow-green-500/20">
+                    {eventType === 'holiday' ? 'Salvează Vacanța' : 'Creează Eveniment'}
+                </button>
             </form>
         )}
 
@@ -288,7 +433,7 @@ export default function AdminPanel() {
             <div className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl ${cardBg}`}>
                 <h2 className="text-2xl font-black mb-8 text-blue-500">🔔 Anunță Participanții</h2>
                 <div className="grid gap-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                    {posts.filter(p=>p.col === 'activities').map(p => (
+                    {posts.filter(p=>p.col === 'calendar_events' && p.type === 'activity').map(p => (
                         <div key={p.id} className={`p-5 rounded-2xl border flex flex-col justify-between items-start gap-4 ${darkMode ? 'bg-black/40 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
                             <div><h3 className="font-black text-base">{p.title}</h3><p className="text-xs opacity-60 mt-1 font-bold">Înscriși: {p.attendees?.length || 0}</p></div>
                             <button onClick={() => handleNotifyAttendees(p)} disabled={!p.attendees || p.attendees.length === 0} className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl font-black text-xs hover:bg-blue-500 transition disabled:opacity-30 disabled:cursor-not-allowed">Trimite Mesaj</button>
