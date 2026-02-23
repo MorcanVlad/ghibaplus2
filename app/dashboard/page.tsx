@@ -3,28 +3,38 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../lib/firebase"; 
 import { useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc, collection, query, getDocs, arrayUnion, arrayRemove, orderBy, onSnapshot, addDoc } from "firebase/firestore";
-import { CALENDAR_TYPES, SCHOOL_CLASSES, INTEREST_CATEGORIES } from "../lib/constants";
+import { SCHOOL_CLASSES } from "../lib/constants";
 
 const TRANSLATIONS: any = {
   ro: {
-    search: "Caută...", settings: "⚙️ Setări", logout: "Ieșire", admin: "ADMIN",
-    welcomeTitle: "Bine ai venit!", welcomeMsg: "Bine ai venit pe GhibaPlus!",
-    joinEvent: "Te-ai înscris la: ", notif: "Notificări", noNotif: "Nicio notificare.",
-    dateTime: "DATA/ORA", location: "LOCAȚIE", join: "Particip ✅", cancel: "Anulează",
-    readMore: "📖 Detalii", lang: "Limba Interfeței", class: "Clasa Ta (Blocat)",
-    phone: "Număr de Telefon", save: "Salvează Setările", 
-    council: "Consiliul Elevilor", official: "Oficial", event: "Eveniment",
-    seats: "Locuri", noSpots: "Locuri epuizate!"
+    search: "Caută...", settings: "⚙️ Setări", admin: "ADMIN",
+    welcomeTitle: "Bine ai venit!", welcomeMsg: "Ne bucurăm să te avem pe GhibaPlus. Aici vei găsi toate noutățile școlii!",
+    joinEventTitle: "Înscriere Confirmată ✅", joinEventMsg: "Te-ai înscris cu succes la:", 
+    notif: "Notificări", noNotif: "Nicio notificare.", dateTime: "DATA/ORA", location: "LOCAȚIE", join: "Particip ✅", cancel: "Anulează", readMore: "📖 Citește mai mult", lang: "Limba Interfeței", class: "Clasa Ta (Blocat)", phone: "Număr de Telefon", save: "Salvează Setările", council: "Consiliul Elevilor", noSpots: "Locuri epuizate!"
   },
   en: {
-    search: "Search...", settings: "⚙️ Settings", logout: "Logout", admin: "ADMIN",
-    welcomeTitle: "Welcome!", welcomeMsg: "Welcome to GhibaPlus!",
-    joinEvent: "You joined: ", notif: "Notifications", noNotif: "No notifications.",
-    dateTime: "DATE/TIME", location: "LOCATION", join: "Join ✅", cancel: "Cancel",
-    readMore: "📖 Details", lang: "Interface Language", class: "Your Class (Locked)",
-    phone: "Phone Number", save: "Save Settings",
-    council: "Student Council", official: "Official", event: "Event",
-    seats: "Seats", noSpots: "No spots left!"
+    search: "Search...", settings: "⚙️ Settings", admin: "ADMIN",
+    welcomeTitle: "Welcome!", welcomeMsg: "Glad to have you on GhibaPlus. Here you'll find all school news!",
+    joinEventTitle: "Registration Confirmed ✅", joinEventMsg: "Successfully joined:",
+    notif: "Notifications", noNotif: "No notifications.", dateTime: "DATE/TIME", location: "LOCATION", join: "Join ✅", cancel: "Cancel", readMore: "📖 Read More", lang: "Interface Language", class: "Your Class (Locked)", phone: "Phone Number", save: "Save Settings", council: "Student Council", noSpots: "No spots left!"
+  },
+  fr: {
+    search: "Recherche...", settings: "⚙️ Paramètres", admin: "ADMIN",
+    welcomeTitle: "Bienvenue !", welcomeMsg: "Heureux de vous avoir sur GhibaPlus !",
+    joinEventTitle: "Inscription confirmée ✅", joinEventMsg: "Inscrit à :",
+    notif: "Notifications", noNotif: "Pas de notifications.", dateTime: "DATE/HEURE", location: "LIEU", join: "Participer ✅", cancel: "Annuler", readMore: "📖 Détails", lang: "Langue", class: "Classe (Bloqué)", phone: "Téléphone", save: "Enregistrer", council: "Conseil", noSpots: "Complet!"
+  },
+  de: {
+    search: "Suche...", settings: "⚙️ Einstellungen", admin: "ADMIN",
+    welcomeTitle: "Willkommen!", welcomeMsg: "Schön, dass du bei GhibaPlus bist!",
+    joinEventTitle: "Anmeldung bestätigt ✅", joinEventMsg: "Beigetreten:",
+    notif: "Benachrichtigungen", noNotif: "Keine Nachrichten.", dateTime: "DATUM/ZEIT", location: "ORT", join: "Teilnehmen ✅", cancel: "Stornieren", readMore: "📖 Details", lang: "Sprache", class: "Klasse (Gesperrt)", phone: "Telefon", save: "Speichern", council: "Schülerrat", noSpots: "Voll!"
+  },
+  es: {
+    search: "Buscar...", settings: "⚙️ Ajustes", admin: "ADMIN",
+    welcomeTitle: "¡Bienvenido!", welcomeMsg: "Nos alegra tenerte en GhibaPlus.",
+    joinEventTitle: "Registro Confirmado ✅", joinEventMsg: "Te uniste a:",
+    notif: "Notificaciones", noNotif: "Sin notificaciones.", dateTime: "FECHA", location: "UBICACIÓN", join: "Participar ✅", cancel: "Cancelar", readMore: "📖 Detalles", lang: "Idioma", class: "Clase (Bloqueado)", phone: "Teléfono", save: "Guardar", council: "Consejo", noSpots: "¡Lleno!"
   }
 };
 
@@ -34,15 +44,12 @@ export default function Dashboard() {
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  
   const [showSettings, setShowSettings] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
-  
   const [editPhone, setEditPhone] = useState("");
   const [editLang, setEditLang] = useState("ro");
   const [darkMode, setDarkMode] = useState(true);
-
   const router = useRouter();
 
   useEffect(() => {
@@ -52,10 +59,7 @@ export default function Dashboard() {
       const snap = await getDoc(doc(db, "users", u.uid));
       if (snap.exists()) {
         const userData = { id: u.uid, ...snap.data() };
-        setUser(userData);
-        setEditPhone(userData.phone || "");
-        setEditLang(userData.language || "ro");
-        
+        setUser(userData); setEditPhone(userData.phone || ""); setEditLang(userData.language || "ro");
         const qNotif = query(collection(db, "users", u.uid, "notifications"), orderBy("sentAt", "desc"));
         onSnapshot(qNotif, (s) => setNotifications(s.docs.map(d => ({id: d.id, ...d.data()}))));
         loadFeed();
@@ -77,8 +81,7 @@ export default function Dashboard() {
   const handleSaveSettings = async () => {
       if (editPhone.length !== 10) return alert("Numărul de telefon trebuie să aibă 10 cifre!");
       await updateDoc(doc(db, "users", user.id), { phone: editPhone, language: editLang });
-      setUser({ ...user, phone: editPhone, language: editLang });
-      setShowSettings(false);
+      setUser({ ...user, phone: editPhone, language: editLang }); setShowSettings(false);
   };
 
   const toggleTheme = () => {
@@ -86,13 +89,10 @@ export default function Dashboard() {
     localStorage.setItem("ghiba_theme", next ? "dark" : "light");
   };
 
-  // NOU: Deschide notificările și le marchează ca citite
   const openNotifications = async () => {
     setShowNotif(true);
     const unread = notifications.filter(n => !n.read);
-    for (const n of unread) {
-        await updateDoc(doc(db, "users", user.id, "notifications", n.id), { read: true });
-    }
+    for (const n of unread) await updateDoc(doc(db, "users", user.id, "notifications", n.id), { read: true });
   };
 
   const handleRegister = async (item: any) => {
@@ -102,7 +102,8 @@ export default function Dashboard() {
     if(!isReg && item.maxSpots && newAttendees.length > item.maxSpots) return alert(t.noSpots);
     
     await updateDoc(ref, { attendees: newAttendees });
-    if(!isReg) await addDoc(collection(db, "users", user.id, "notifications"), { title: item.title, message: `${t.joinEvent} ${item.title}`, sentAt: new Date().toISOString(), read: false });
+    // SALVAM TIPUL SI NUMELE EVENIMENTULUI PENTRU TRADUCERE DINAMICA
+    if(!isReg) await addDoc(collection(db, "users", user.id, "notifications"), { type: "join_event", eventTitle: item.title, sentAt: new Date().toISOString(), read: false });
     loadFeed();
   };
 
@@ -115,7 +116,7 @@ export default function Dashboard() {
   if (!user) return null;
 
   const bgMain = darkMode ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900";
-  const cardBg = darkMode ? "bg-slate-900/60 border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)]" : "bg-white border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]";
+  const cardBg = darkMode ? "bg-slate-900/60 border-white/10 shadow-lg" : "bg-white border-slate-200 shadow-md";
   const inputBg = darkMode ? "bg-black/50 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900";
 
   const filteredFeed = feed.filter(item => {
@@ -143,7 +144,6 @@ export default function Dashboard() {
                     🔔 {notifications.some(n=>!n.read) && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-slate-900"></span>}
                 </button>
                 <button onClick={() => setShowSettings(true)} className="font-bold text-xs sm:text-sm opacity-70 hover:opacity-100">⚙️</button>
-                {/* Butonul de ADMIN este mereu vizibil! */}
                 {user.role === 'admin' && <button onClick={() => router.push('/admin')} className="bg-red-600 text-white px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-black shadow-lg shadow-red-500/20">ADMIN</button>}
                 <button onClick={() => auth.signOut()} className="text-[10px] sm:text-xs font-bold opacity-70 hover:text-red-500">Ieșire</button>
             </div>
@@ -212,13 +212,11 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* MODAL SETARI */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`w-full max-w-lg p-10 rounded-[2.5rem] border shadow-2xl relative ${cardBg}`}>
             <button onClick={() => setShowSettings(false)} className="absolute top-6 right-6 w-10 h-10 bg-black/10 dark:bg-white/10 rounded-full font-bold">✕</button>
             <h2 className="text-2xl font-black mb-8">{t.settings}</h2>
-            
             <div className="space-y-6">
                 <div>
                     <label className="text-[10px] font-black tracking-widest uppercase opacity-50 mb-2 block">{t.lang}</label>
@@ -230,25 +228,21 @@ export default function Dashboard() {
                         <option value="es" className="text-black bg-white">🇪🇸 Español</option>
                     </select>
                 </div>
-
                 <div>
                     <label className="text-[10px] font-black tracking-widest uppercase opacity-50 mb-2 block">{t.class}</label>
                     <input value={user.class} disabled className={`w-full p-4 rounded-2xl font-bold border opacity-50 cursor-not-allowed ${inputBg}`} />
                     <p className="text-[10px] text-red-500 mt-2 font-bold">🔒 Clasa poate fi modificată doar de un Administrator.</p>
                 </div>
-
                 <div>
                     <label className="text-[10px] font-black tracking-widest uppercase opacity-50 mb-2 block">{t.phone}</label>
                     <input value={editPhone} onChange={e=>setEditPhone(e.target.value.replace(/\D/g,'').slice(0,10))} className={`w-full p-4 rounded-2xl font-bold outline-none border focus:border-red-500 ${inputBg}`} />
                 </div>
-
                 <button onClick={handleSaveSettings} className="w-full py-4 mt-4 bg-red-600 text-white rounded-2xl font-black text-lg hover:bg-red-500 transition-colors shadow-lg shadow-red-500/20">{t.save}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL NOTIFICARI */}
       {showNotif && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
           <div className={`w-full max-w-md p-8 rounded-[2.5rem] border shadow-2xl relative ${cardBg}`}>
@@ -256,13 +250,19 @@ export default function Dashboard() {
             <h2 className="text-2xl font-black mb-6">{t.notif}</h2>
             <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
               {notifications.length === 0 && <p className="opacity-50 italic text-center py-10">{t.noNotif}</p>}
-              {notifications.map(n => (
-                <div key={n.id} className={`p-5 rounded-2xl border ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
-                  <p className="font-black text-sm mb-1">{n.title}</p>
-                  <p className="text-sm opacity-80">{n.message}</p>
-                  <p className="text-[10px] mt-2 font-mono opacity-40">{new Date(n.sentAt).toLocaleString('ro-RO')}</p>
-                </div>
-              ))}
+              {notifications.map(n => {
+                // LOGICA DE TRADUCERE DINAMICA
+                const notifTitle = n.type === 'welcome' ? t.welcomeTitle : (n.type === 'join_event' ? t.joinEventTitle : n.title);
+                const notifMsg = n.type === 'welcome' ? t.welcomeMsg : (n.type === 'join_event' ? `${t.joinEventMsg} ${n.eventTitle}` : n.message);
+
+                return (
+                  <div key={n.id} className={`p-5 rounded-2xl border ${darkMode ? 'bg-white/5 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
+                    <p className="font-black text-sm mb-1">{notifTitle}</p>
+                    <p className="text-sm opacity-80">{notifMsg}</p>
+                    <p className="text-[10px] mt-2 font-mono opacity-40">{new Date(n.sentAt).toLocaleString('ro-RO')}</p>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -278,7 +278,13 @@ export default function Dashboard() {
                 <h2 className="text-2xl sm:text-3xl font-black mb-6">{selectedPost.title}</h2>
                 <p className="text-base sm:text-lg leading-relaxed opacity-90 whitespace-pre-wrap mb-8">{selectedPost.content}</p>
                 {selectedPost.type === 'activity' && (
-                  <button onClick={() => handleRegister(selectedPost)} className={`w-full py-4 rounded-2xl font-black text-lg shadow-xl ${selectedPost.attendees?.some((a:any)=>a.id===user.id) ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-green-600 text-white'}`}>
+                    <div className={`mb-6 p-4 sm:p-5 rounded-2xl border grid grid-cols-2 gap-4 ${darkMode ? 'bg-black/30 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+                        <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.dateTime}</span><span className="font-bold text-blue-500 text-sm sm:text-base">{new Date(selectedPost.date).toLocaleString('ro-RO')}</span></div>
+                        <div><span className="text-[10px] font-black tracking-widest uppercase opacity-50 block mb-1">{t.location}</span><span className="font-bold text-sm sm:text-base">{selectedPost.location}</span></div>
+                    </div>
+                )}
+                {selectedPost.type === 'activity' && (
+                  <button onClick={() => { handleRegister(selectedPost); setSelectedPost(null); }} className={`w-full py-4 rounded-2xl font-black text-lg shadow-xl ${selectedPost.attendees?.some((a:any)=>a.id===user.id) ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-green-600 text-white'}`}>
                     {selectedPost.attendees?.some((a:any)=>a.id===user.id) ? t.cancel : t.join}
                   </button>
                 )}

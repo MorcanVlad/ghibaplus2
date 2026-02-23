@@ -7,48 +7,11 @@ import { useRouter } from "next/navigation";
 import { SCHOOL_CLASSES } from "./lib/constants";
 
 const TRANSLATIONS: any = {
-  ro: {
-    portal: "Portalul Elevilor", emailPlace: "Nume.Prenume@ghibabirta.ro", phonePlace: "Telefon (07XX...)",
-    classPlace: "Clasa", passPlace: "Parolă", confirmPlace: "Confirmă Parola",
-    accept1: "Accept ", termsBtn: "Termenii și Condițiile", accept2: " de utilizare.",
-    btnRegister: "Creează Contul", btnLogin: "Intră în Cont",
-    switchLogin: "Ai deja cont? Autentifică-te.", switchRegister: "Nou aici? Solicită un cont.",
-    errEmail: "Folosește emailul școlii (@ghibabirta.ro).", errClass: "Alege-ți clasa!",
-    errTerms: "Trebuie să accepți Termenii și Condițiile.", errPassMatch: "Parolele nu coincid!",
-    errPhone: "Numărul de telefon trebuie să aibă exact 10 cifre!",
-    errWhitelist: "⛔ Cont neaprobat. Contactează Consiliul Elevilor.",
-    errCreds: "Parolă sau email incorect.", errInUse: "Acest cont a fost deja creat.",
-    welcomeTitle: "Bine ai venit!", welcomeMsg: "Ne bucurăm să te avem pe GhibaPlus. Aici vei găsi toate noutățile și evenimentele școlii!",
-    classWarning: "⚠️ Atenție: Clasa nu mai poate fi modificată după crearea contului!",
-    tTitle: "📄 Termeni și Condiții", tBtn: "Am înțeles și Accept",
-    tc1: "1. Originea Platformei: Această aplicație, GhibaPlus, a fost realizată și dezvoltată în cadrul unui proiect de mobilitate Erasmus+ desfășurat în Portugalia. Este o inițiativă independentă creată de elevi, pentru elevi.",
-    tc2: "2. Statut Neoficial: GhibaPlus nu reprezintă un canal de comunicare administrativ oficial al instituției de învățământ, ci funcționează ca un instrument suplimentar și modern pentru informarea și organizarea comunității școlare.",
-    tc3: "3. Prelucrarea Datelor: Datele cu caracter personal (nume, clasă, număr de telefon, email) sunt colectate strict în scopul funcționării platformei (ex: validarea identității, înscrierea la evenimente). Datele sunt stocate în siguranță și nu vor fi partajate cu terți în scopuri comerciale.",
-    tc4: "4. Reguli de Conduită: Utilizatorii se obligă să mențină un comportament civilizat. Orice formă de hărțuire (bullying), limbaj licențios, instigare la ură sau spam va atrage suspendarea sau ștergerea definitivă a contului.",
-    tc5: "5. Moderare și Responsabilitate: Administratorii platformei își rezervă dreptul de a revoca accesul utilizatorilor care încalcă prezentul regulament, fără o notificare prealabilă. Utilizatorul poartă responsabilitatea exclusivă pentru păstrarea confidențialității parolei sale.",
-    tc6: "Prin continuarea utilizării acestei platforme, confirmi că ai citit, înțeles și acceptat aceste reguli în totalitate."
-  },
-  en: {
-    portal: "Student Portal", emailPlace: "Name.Surname@ghibabirta.ro", phonePlace: "Phone (07XX...)",
-    classPlace: "Class", passPlace: "Password", confirmPlace: "Confirm Password",
-    accept1: "I accept the ", termsBtn: "Terms and Conditions", accept2: ".",
-    btnRegister: "Create Account", btnLogin: "Sign In",
-    switchLogin: "Already have an account? Sign in.", switchRegister: "New here? Request an account.",
-    errEmail: "Use your school email (@ghibabirta.ro).", errClass: "Choose your class!",
-    errTerms: "You must accept the Terms and Conditions.", errPassMatch: "Passwords do not match!",
-    errPhone: "Phone number must be exactly 10 digits!",
-    errWhitelist: "⛔ Account not approved. Contact the Student Council.",
-    errCreds: "Incorrect email or password.", errInUse: "This account already exists.",
-    welcomeTitle: "Welcome!", welcomeMsg: "Glad to have you on GhibaPlus. Here you will find all school news and events!",
-    classWarning: "⚠️ Warning: Your class cannot be changed after registration!",
-    tTitle: "📄 Terms and Conditions", tBtn: "I understand and Accept",
-    tc1: "1. Platform Origin: This application, GhibaPlus, was designed and developed during an Erasmus+ mobility project held in Portugal. It is an independent initiative created by students, for students.",
-    tc2: "2. Unofficial Status: GhibaPlus is not an official administrative communication channel of the educational institution, but serves as an additional, modern tool for informing and organizing the school community.",
-    tc3: "3. Data Processing: Personal data (name, class, phone number, email) are collected strictly for the platform's operation (e.g., identity validation, event registration). Data is stored securely and will not be shared with third parties for commercial purposes.",
-    tc4: "4. Code of Conduct: Users must maintain civilized behavior. Any form of harassment (bullying), foul language, hate speech, or spam will result in the suspension or permanent deletion of the account.",
-    tc5: "5. Moderation and Responsibility: Platform administrators reserve the right to revoke access for users who violate these rules, without prior notice. The user is solely responsible for keeping their password confidential.",
-    tc6: "By continuing to use this platform, you confirm that you have read, understood, and fully accepted these rules."
-  }
+  ro: { portal: "Portalul Elevilor", emailPlace: "Nume.Prenume@ghibabirta.ro", phonePlace: "Telefon", classPlace: "Clasa", passPlace: "Parolă", confirmPlace: "Confirmă Parola", accept1: "Accept ", termsBtn: "Termenii și Condițiile", accept2: " de utilizare.", btnRegister: "Creează Contul", btnLogin: "Intră în Cont", switchLogin: "Ai deja cont? Autentifică-te.", switchRegister: "Nou aici? Solicită un cont.", errEmail: "Folosește emailul școlii (@ghibabirta.ro).", errClass: "Alege-ți clasa!", errTerms: "Trebuie să accepți Termenii și Condițiile.", errPassMatch: "Parolele nu coincid!", errPhone: "Numărul de telefon trebuie să aibă 10 cifre!", errWhitelist: "⛔ Cont neaprobat.", errCreds: "Parolă sau email incorect.", errInUse: "Acest cont a fost deja creat.", classWarning: "⚠️ Atenție: Clasa nu mai poate fi modificată ulterior!", tTitle: "📄 Termeni și Condiții", tBtn: "Am înțeles și Accept", tc1: "1. Originea Platformei: Această aplicație a fost dezvoltată în cadrul unui proiect Erasmus+ desfășurat în Portugalia. Este o inițiativă independentă creată de elevi, pentru elevi.", tc2: "2. Statut Neoficial: Nu este un canal administrativ oficial.", tc3: "3. Date: Datele sunt stocate în siguranță.", tc4: "4. Reguli: Fără bullying sau spam.", tc5: "5. Moderare: Accesul poate fi revocat." },
+  en: { portal: "Student Portal", emailPlace: "Name.Surname@ghibabirta.ro", phonePlace: "Phone", classPlace: "Class", passPlace: "Password", confirmPlace: "Confirm Password", accept1: "I accept the ", termsBtn: "Terms and Conditions", accept2: ".", btnRegister: "Create Account", btnLogin: "Sign In", switchLogin: "Already have an account? Sign in.", switchRegister: "New here? Request an account.", errEmail: "Use school email.", errClass: "Choose class!", errTerms: "Accept Terms.", errPassMatch: "Passwords don't match!", errPhone: "10 digits required!", errWhitelist: "⛔ Account not approved.", errCreds: "Incorrect credentials.", errInUse: "Account exists.", classWarning: "⚠️ Warning: Class cannot be changed later!", tTitle: "📄 Terms and Conditions", tBtn: "I Accept", tc1: "1. Origin: App developed during an Erasmus+ project in Portugal.", tc2: "2. Unofficial: Not an official administrative tool.", tc3: "3. Data: Secured.", tc4: "4. Conduct: No bullying.", tc5: "5. Moderation: Access can be revoked." },
+  fr: { portal: "Portail Étudiant", emailPlace: "Nom.Prenom@ghibabirta.ro", phonePlace: "Téléphone", classPlace: "Classe", passPlace: "Mot de passe", confirmPlace: "Confirmer le mot de passe", accept1: "J'accepte les ", termsBtn: "Conditions", accept2: ".", btnRegister: "Créer un Compte", btnLogin: "Se Connecter", switchLogin: "Déjà un compte ? Connectez-vous.", switchRegister: "Nouveau ? Demandez un compte.", errEmail: "Email de l'école requis.", errClass: "Choisissez la classe!", errTerms: "Acceptez les conditions.", errPassMatch: "Mots de passe différents!", errPhone: "10 chiffres requis!", errWhitelist: "⛔ Non approuvé.", errCreds: "Erreur.", errInUse: "Compte existant.", classWarning: "⚠️ La classe ne peut plus être modifiée!", tTitle: "📄 Conditions", tBtn: "J'accepte", tc1: "1. Origine : Projet Erasmus+ au Portugal.", tc2: "2. Non officiel.", tc3: "3. Données : Sécurisées.", tc4: "4. Conduite : Pas de harcèlement.", tc5: "5. Modération : Accès révocable." },
+  de: { portal: "Schülerportal", emailPlace: "Name.Vorname@ghibabirta.ro", phonePlace: "Telefon", classPlace: "Klasse", passPlace: "Passwort", confirmPlace: "Passwort bestätigen", accept1: "Ich akzeptiere die ", termsBtn: "Bedingungen", accept2: ".", btnRegister: "Konto erstellen", btnLogin: "Anmelden", switchLogin: "Schon ein Konto?", switchRegister: "Neu hier?", errEmail: "Schul-E-Mail verwenden.", errClass: "Klasse wählen!", errTerms: "Bedingungen akzeptieren.", errPassMatch: "Passwörter falsch!", errPhone: "10 Ziffern!", errWhitelist: "⛔ Nicht genehmigt.", errCreds: "Falsch.", errInUse: "Konto existiert.", classWarning: "⚠️ Klasse kann nicht geändert werden!", tTitle: "📄 Bedingungen", tBtn: "Akzeptieren", tc1: "1. Herkunft: Erasmus+ Projekt Portugal.", tc2: "2. Inoffiziell.", tc3: "3. Daten sicher.", tc4: "4. Kein Mobbing.", tc5: "5. Zugang kann entzogen werden." },
+  es: { portal: "Portal Estudiantil", emailPlace: "Nombre.Apellido@ghibabirta.ro", phonePlace: "Teléfono", classPlace: "Clase", passPlace: "Contraseña", confirmPlace: "Confirmar Contraseña", accept1: "Acepto los ", termsBtn: "Términos", accept2: ".", btnRegister: "Crear Cuenta", btnLogin: "Iniciar Sesión", switchLogin: "¿Ya tienes cuenta?", switchRegister: "¿Nuevo aquí?", errEmail: "Usa tu correo escolar.", errClass: "¡Elige tu clase!", errTerms: "Acepta los Términos.", errPassMatch: "¡No coinciden!", errPhone: "¡10 dígitos!", errWhitelist: "⛔ No aprobada.", errCreds: "Incorrecto.", errInUse: "Cuenta existe.", classWarning: "⚠️ ¡La clase no se puede cambiar!", tTitle: "📄 Términos", tBtn: "Acepto", tc1: "1. Origen: Proyecto Erasmus+ en Portugal.", tc2: "2. No oficial.", tc3: "3. Datos seguros.", tc4: "4. Sin acoso.", tc5: "5. Moderación activa." }
 };
 
 export default function Login() {
@@ -57,21 +20,18 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [studentClass, setStudentClass] = useState("");
-  
   const [currentLang, setCurrentLang] = useState("ro"); 
-  
   const [isRegistering, setIsRegistering] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [error, setError] = useState("");
-  
   const router = useRouter();
+  
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS["ro"];
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
     const formattedEmail = email.toLowerCase().trim();
     if (!formattedEmail.endsWith("@ghibabirta.ro")) return setError(t.errEmail); 
 
@@ -89,23 +49,14 @@ export default function Login() {
         let displayName = formattedEmail.split("@")[0].split(".").map(n => n.charAt(0).toUpperCase() + n.slice(1)).join(" ");
         
         await setDoc(doc(db, "users", result.user.uid), { 
-          uid: result.user.uid,
-          email: result.user.email, 
-          name: displayName, 
-          phone: phone, 
-          class: studentClass, 
-          role: "student",
-          interests: [],
-          language: currentLang,
-          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`,
-          termsAcceptedAt: new Date().toISOString()
+          uid: result.user.uid, email: result.user.email, name: displayName, phone: phone, 
+          class: studentClass, role: "student", interests: [], language: currentLang,
+          avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`, termsAcceptedAt: new Date().toISOString()
         });
 
+        // NOTIFICARE SALVATĂ DOAR CA TIP PENTRU A FI TRADUSĂ DINAMIC
         await addDoc(collection(db, "users", result.user.uid, "notifications"), {
-          title: t.welcomeTitle,
-          message: t.welcomeMsg,
-          sentAt: new Date().toISOString(),
-          read: false
+          type: "welcome", sentAt: new Date().toISOString(), read: false
         });
 
       } else {
@@ -123,25 +74,26 @@ export default function Login() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans bg-slate-950 selection:bg-red-500/30">
-      
       <div className="absolute inset-0 z-0">
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-red-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10000ms]"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[8000ms]"></div>
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
       </div>
 
       <div className="absolute top-6 right-6 z-20">
           <select value={currentLang} onChange={(e) => setCurrentLang(e.target.value)} className="bg-slate-900/80 text-white border border-white/20 rounded-xl px-4 py-2 font-bold outline-none cursor-pointer backdrop-blur-xl shadow-lg hover:border-white/40 transition-colors">
               <option value="ro" className="text-black bg-white">🇷🇴 RO</option>
               <option value="en" className="text-black bg-white">🇬🇧 EN</option>
+              <option value="fr" className="text-black bg-white">🇫🇷 FR</option>
+              <option value="de" className="text-black bg-white">🇩🇪 DE</option>
+              <option value="es" className="text-black bg-white">🇪🇸 ES</option>
           </select>
       </div>
 
-      <div className="p-10 rounded-[2.5rem] max-w-md w-full z-10 mx-4 relative backdrop-blur-2xl border border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.6)] bg-slate-900/40 my-8">
+      <div className="p-10 rounded-[2.5rem] max-w-md w-full z-10 mx-4 relative backdrop-blur-2xl border border-white/20 shadow-2xl bg-slate-900/40 my-8">
         <div className="flex flex-col items-center mb-8">
-          <img src="/favicon.ico" alt="Logo" className="w-24 h-24 rounded-[2rem] mb-6 shadow-[0_10px_30px_rgba(239,68,68,0.3)] transform hover:scale-110 transition-transform duration-500 border border-white/20" />
+          <img src="/favicon.ico" alt="Logo" className="w-24 h-24 rounded-[2rem] mb-6 shadow-lg transform hover:scale-110 transition-transform duration-500 border border-white/20" />
           <h1 className="text-4xl font-black tracking-tight text-white drop-shadow-md">Ghiba<span className="text-red-500">+</span></h1>
-          <p className="text-gray-300 mt-2 font-black text-[10px] tracking-[0.2em] uppercase bg-white/10 px-4 py-1.5 rounded-full border border-white/10 shadow-sm">{t.portal}</p>
+          <p className="text-gray-300 mt-2 font-black text-[10px] tracking-[0.2em] uppercase bg-white/10 px-4 py-1.5 rounded-full">{t.portal}</p>
         </div>
         
         <form onSubmit={handleAuth} className="space-y-4">
@@ -151,14 +103,11 @@ export default function Login() {
                 <div className="animate-fade-in space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                         <input type="tel" placeholder={t.phonePlace} value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} maxLength={10} className={inputClass} required />
-                        <div>
-                            <select value={studentClass} onChange={e => setStudentClass(e.target.value)} className={`${inputClass} appearance-none`} required>
-                                <option value="" className="text-black bg-white">{t.classPlace}</option>
-                                {SCHOOL_CLASSES.map(c => <option key={c} value={c} className="text-black bg-white">{c}</option>)}
-                            </select>
-                        </div>
+                        <select value={studentClass} onChange={e => setStudentClass(e.target.value)} className={`${inputClass} appearance-none`} required>
+                            <option value="" className="text-black bg-white">{t.classPlace}</option>
+                            {SCHOOL_CLASSES.map(c => <option key={c} value={c} className="text-black bg-white">{c}</option>)}
+                        </select>
                     </div>
-                    {/* AVERTISMENT SCHIMBARE CLASA */}
                     <p className="text-[10px] text-red-400 font-bold ml-1 tracking-wide">{t.classWarning}</p>
                 </div>
             )}
@@ -177,7 +126,7 @@ export default function Login() {
                 </div>
             )}
             
-            <button className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl shadow-[0_10px_20px_rgba(220,38,38,0.3)] transition-all transform hover:-translate-y-1 mt-6 text-lg border border-red-500/50">
+            <button className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl transition-all transform hover:-translate-y-1 mt-6 text-lg border border-red-500/50">
               {isRegistering ? t.btnRegister : t.btnLogin}
             </button>
         </form>
